@@ -1,0 +1,6 @@
+
+# env files
+.env
+
+# Go workspace file
+go.work
