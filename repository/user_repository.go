@@ -22,12 +22,11 @@ func NewUserRepository(db *sql.DB) UserRepository {
 }
 
 func (repository *UserRepositoryImpl) GetUser(email string, ctx context.Context) (*entity.User, error) {
-	query := "SELECT username, email, password FROM users WHERE email = $1"
+	query := "SELECT id, username, email, password FROM users WHERE email = $1"
 	row := repository.DB.QueryRowContext(ctx, query, email)
 
 	var user entity.User
-	err := row.Scan(&user.Username, &user.Email, &user.Password)
-
+	err := row.Scan(&user.ID, &user.Username, &user.Email, &user.Password)
 	if err != nil {
 		return nil, err
 	}

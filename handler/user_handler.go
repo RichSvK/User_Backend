@@ -50,17 +50,9 @@ func (userHandler *UserHandlerImpl) Login(c *fiber.Ctx) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	status, result, err := userHandler.UserService.LoginService(loginRequest, ctx)
+	status, result := userHandler.UserService.LoginService(loginRequest, ctx)
 
-	if err != nil {
-		return c.Status(status).JSON(response.Output{
-			Message: err.Error(),
-			Time:    time.Now(),
-			Data:    nil,
-		})
-	}
-
-	return c.JSON(result)
+	return c.Status(status).JSON(result)
 }
 
 func (userHandler *UserHandlerImpl) Register(c *fiber.Ctx) error {

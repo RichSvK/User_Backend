@@ -1,0 +1,4 @@
+CREATE TABLE roles(
+	roleId INT PRIMARY KEY NOT NULL,
+	roleName VARCHAR(5)
+);

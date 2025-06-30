@@ -2,7 +2,7 @@ package service
 
 import (
 	"context"
-	"fmt"
+	"stock_backend/helper"
 	"stock_backend/model/entity"
 	"stock_backend/model/request"
 	"stock_backend/model/response"
@@ -15,7 +15,7 @@ import (
 )
 
 type UserService interface {
-	LoginService(request request.LoginRequest, ctx context.Context) (int, any, error)
+	LoginService(request request.LoginRequest, ctx context.Context) (int, any)
 	RegisterService(request request.RegisterRequest, ctx context.Context) (int, any, error)
 }
 
@@ -29,35 +29,45 @@ func NewUserService(repository repository.UserRepository) UserService {
 	}
 }
 
-func (service *UserServiceImpl) LoginService(request request.LoginRequest, ctx context.Context) (int, any, error) {
+func (service *UserServiceImpl) LoginService(request request.LoginRequest, ctx context.Context) (int, any) {
 	user, err := service.Repository.GetUser(request.Email, ctx)
 	if err != nil {
 		return fiber.StatusNotFound,
 			response.Output{
-				Message: err.Error(),
+				Message: "User not found",
 				Time:    time.Now(),
 				Data:    nil,
-			},
-			err
+			}
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(request.Password)); err != nil {
-		fmt.Println("Password salah")
 		return fiber.StatusUnauthorized,
 			response.Output{
-				Message: err.Error(),
+				Message: "Wrong password",
 				Time:    time.Now(),
 				Data:    nil,
-			},
-			err
+			}
+	}
+
+	userId := user.ID.String()
+	token, err := helper.GenerateJWT(userId, user.Email, user.Role)
+	if err != nil {
+		return fiber.StatusInternalServerError,
+			response.Output{
+				Message: "Failed to generate token",
+				Time:    time.Now(),
+				Data:    nil,
+			}
 	}
 
 	return fiber.StatusOK,
 		response.Output{
 			Message: "Login Success",
 			Time:    time.Now(),
-			Data:    nil,
-		}, nil
+			Data: map[string]string{
+				"token": token,
+			},
+		}
 }
 
 func (service *UserServiceImpl) RegisterService(request request.RegisterRequest, ctx context.Context) (int, any, error) {
@@ -73,7 +83,7 @@ func (service *UserServiceImpl) RegisterService(request request.RegisterRequest,
 	}
 
 	var user entity.User = entity.User{
-		ID:       uuid.NewString(),
+		ID:       uuid.New(),
 		Username: request.Username,
 		Email:    request.Email,
 		Password: string(hashedPassword),
