@@ -13,17 +13,16 @@ import (
 	"go.mongodb.org/mongo-driver/v2/mongo"
 )
 
-func RegisterUserRoutes(router fiber.Router, db *sql.DB) {
+func RegisterUserRoutes(router fiber.Router, db *sql.DB, redis_db *redis.Client) {
 	userRouting := router.Group("/users")
 	validator := validator.New()
-	userRepository := repository.NewUserRepository(db)
+	userRepository := repository.NewUserRepository(db, redis_db)
 	userService := service.NewUserService(userRepository)
 	userHandler := handler.NewUserHandler(userService, validator)
 
-	userRouting.Post("/login", userHandler.Login)
-	userRouting.Post("/register", userHandler.Register)
-	// userRouting.Post("/logout", middleware.JWTMiddleware, userHandler.Logout)
-	// userRouting.Put("/update", middleware.JWTMiddleware, userHandler.UpdateUser)
+	userRouting.Post("/login", middleware.LoggedOutMiddleware, userHandler.Login)
+	userRouting.Post("/register", middleware.LoggedOutMiddleware, userHandler.Register)
+	userRouting.Post("/logout", middleware.LoggedInStatusMiddleware, middleware.JWTMiddleware, userHandler.Logout)
 }
 
 func RegisterFavoriteRoutes(router fiber.Router, db *mongo.Client, redis_db *redis.Client) {
@@ -33,6 +32,6 @@ func RegisterFavoriteRoutes(router fiber.Router, db *mongo.Client, redis_db *red
 	favoriteService := service.NewFavoriteService(favoriteRepository)
 	favoriteHandler := handler.NewFavoriteHandler(favoriteService, validator)
 
-	favoriteRouting.Get("/", middleware.JWTMiddleware, favoriteHandler.GetFavorites)
-	favoriteRouting.Post("/add", middleware.JWTMiddleware, favoriteHandler.AddFavorites)
+	favoriteRouting.Get("/", middleware.LoggedInStatusMiddleware, middleware.JWTMiddleware, favoriteHandler.GetFavorites)
+	favoriteRouting.Post("/add", middleware.LoggedInStatusMiddleware, middleware.JWTMiddleware, favoriteHandler.AddFavorites)
 }

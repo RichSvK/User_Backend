@@ -2,24 +2,14 @@ package middleware
 
 import (
 	"os"
-	"strings"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt"
 )
 
 func JWTMiddleware(c *fiber.Ctx) error {
-	// Get value of "Authorization" header
-	auth := c.Get("Authorization")
-	if auth == "" {
-		return fiber.ErrUnauthorized
-	}
-
-	parts := strings.SplitN(auth, " ", 2)
-	if len(parts) != 2 || parts[0] != "Bearer" {
-		return fiber.ErrUnauthorized
-	}
-	tokenStr := parts[1]
+	tokenStr := c.Cookies("token")
 
 	// Parse and validate the JWT token
 	jwtSecret := os.Getenv("JWT_SECRET")
@@ -36,6 +26,13 @@ func JWTMiddleware(c *fiber.Ctx) error {
 	}
 
 	claims := token.Claims.(jwt.MapClaims)
+
+	// Check for expired date JWT
+	exp, ok := claims["exp"].(float64)
+	if !ok || int64(exp) < time.Now().Unix() {
+		return fiber.ErrUnauthorized
+	}
+
 	sub, ok := claims["sub"].(string)
 	if !ok {
 		return fiber.ErrUnauthorized
@@ -47,6 +44,5 @@ func JWTMiddleware(c *fiber.Ctx) error {
 		return fiber.ErrUnauthorized
 	}
 	c.Locals("role", role)
-	
 	return c.Next()
 }

@@ -59,7 +59,7 @@ func main() {
 	}
 
 	// Routes Grouping
-	router.RegisterUserRoutes(app, db)
+	router.RegisterUserRoutes(app, db, redisDb)
 	router.RegisterFavoriteRoutes(app, db_favorite, redisDb)
 
 	// Run the app
