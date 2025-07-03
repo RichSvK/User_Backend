@@ -33,6 +33,7 @@ func main() {
 	// Middleware
 	app.Use(logger.New())
 	middleware.CorsMiddleware(app)
+	middleware.RateLimitMiddleware(app)
 
 	err := godotenv.Load()
 	if err != nil {
