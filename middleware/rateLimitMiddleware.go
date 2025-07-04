@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"stock_backend/model/response"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -9,12 +10,14 @@ import (
 
 func RateLimitMiddleware(app *fiber.App) {
 	app.Use(limiter.New(limiter.Config{
-		Max:        10,
+		Max:        20,
 		Expiration: 60 * time.Second,
 
 		LimitReached: func(c *fiber.Ctx) error {
-			return c.Status(fiber.StatusTooManyRequests).JSON(fiber.Map{
-				"message": "Too much request!",
+			return c.Status(fiber.StatusTooManyRequests).JSON(response.Output{
+				Message: "Too many requests",
+				Time:    time.Now(),
+				Data:    nil,
 			})
 		},
 	}))

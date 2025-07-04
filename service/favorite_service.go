@@ -59,7 +59,7 @@ func (service *FavoriteServiceImpl) GetFavoritesService(userId string, ctx conte
 	favoriteData, err := service.Repository.GetFavorites(userId, ctx)
 	if err != nil {
 		result := response.Output{
-			Message: err.Error(),
+			Message: "Internal server error",
 			Time:    time.Now(),
 			Data:    nil,
 		}

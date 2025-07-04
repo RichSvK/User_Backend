@@ -2,6 +2,7 @@ package handler
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"stock_backend/model/request"
@@ -42,10 +43,34 @@ func (handler *UserHandlerImpl) Login(c *fiber.Ctx) error {
 	}
 
 	if err := handler.Validator.Struct(loginRequest); err != nil {
+		if errs, ok := err.(validator.ValidationErrors); ok && len(errs) > 0 {
+			firstErr := errs[0]
+			field := firstErr.Field()
+			tag := firstErr.Tag()
+
+			var msg string
+			switch tag {
+			case "required":
+				msg = fmt.Sprintf("%s is required", field)
+			case "min":
+				msg = fmt.Sprintf("%s must be at least %s characters", field, firstErr.Param())
+			case "email":
+				msg = fmt.Sprintf("%s must be a valid email address", field)
+			default:
+				msg = fmt.Sprintf("%s is invalid", field)
+			}
+
+			return c.Status(fiber.StatusBadRequest).JSON(response.Output{
+				Message: msg,
+				Time:    time.Now(),
+				Data:    nil,
+			})
+		}
+
 		return c.Status(fiber.StatusBadRequest).JSON(response.Output{
-			Message: "Validation failed",
+			Message: "Invalid request failed",
 			Time:    time.Now(),
-			Data:    err.Error(),
+			Data:    nil,
 		})
 	}
 

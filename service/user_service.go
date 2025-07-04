@@ -77,7 +77,7 @@ func (service *UserServiceImpl) RegisterService(request request.RegisterRequest,
 	if err != nil {
 		return fiber.StatusInternalServerError,
 			response.Output{
-				Message: err.Error(),
+				Message: "Internal server error",
 				Time:    time.Now(),
 				Data:    nil,
 			}
@@ -93,7 +93,7 @@ func (service *UserServiceImpl) RegisterService(request request.RegisterRequest,
 	if err := service.Repository.Create(user, ctx); err != nil {
 		return fiber.StatusInternalServerError,
 			response.Output{
-				Message: err.Error(),
+				Message: "Internal server error",
 				Time:    time.Now(),
 				Data:    nil,
 			}
