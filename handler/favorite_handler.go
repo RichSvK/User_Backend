@@ -14,6 +14,7 @@ import (
 type FavoriteHandler interface {
 	GetFavorites(c *fiber.Ctx) error
 	AddFavorites(c *fiber.Ctx) error
+	RemoveFavorites(c *fiber.Ctx) error
 }
 
 type FavoriteHandlerImpl struct {
@@ -26,16 +27,16 @@ func NewFavoriteHandler(service service.FavoriteService, validator *validator.Va
 	}
 }
 
-func (h *FavoriteHandlerImpl) GetFavorites(c *fiber.Ctx) error {
+func (handler *FavoriteHandlerImpl) GetFavorites(c *fiber.Ctx) error {
 	userId := c.Locals("userId").(string)
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	status, result := h.Service.GetFavoritesService(userId, ctx)
+	status, result := handler.Service.GetFavoritesService(userId, ctx)
 
 	return c.Status(status).JSON(result)
 }
 
-func (h *FavoriteHandlerImpl) AddFavorites(c *fiber.Ctx) error {
+func (handler *FavoriteHandlerImpl) AddFavorites(c *fiber.Ctx) error {
 	userId := c.Locals("userId").(string)
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -49,7 +50,17 @@ func (h *FavoriteHandlerImpl) AddFavorites(c *fiber.Ctx) error {
 		})
 	}
 
-	status, result := h.Service.CreateFavorite(userId, addFavoriteRequest, ctx)
+	status, result := handler.Service.CreateFavorite(userId, addFavoriteRequest, ctx)
+
+	return c.Status(status).JSON(result)
+}
+
+func (handler *FavoriteHandlerImpl) RemoveFavorites(c *fiber.Ctx) error {
+	userId := c.Locals("userId").(string)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	status, result := handler.Service.RemoveFavoriteService(userId, ctx)
 
 	return c.Status(status).JSON(result)
 }

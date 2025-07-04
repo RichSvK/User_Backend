@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"os"
+	"strings"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -9,7 +10,18 @@ import (
 )
 
 func JWTMiddleware(c *fiber.Ctx) error {
-	tokenStr := c.Cookies("token")
+	auth := c.Get("Authorization")
+
+	// If the token is empty, allow the request to proceed
+	if auth == "" {
+		return c.Next()
+	}
+
+	parts := strings.SplitN(auth, " ", 2)
+	if len(parts) != 2 || parts[0] != "Bearer" {
+		return c.Next()
+	}
+	tokenStr := parts[1]
 
 	// Parse and validate the JWT token
 	jwtSecret := os.Getenv("JWT_SECRET")

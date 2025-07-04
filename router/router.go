@@ -22,7 +22,8 @@ func RegisterUserRoutes(router fiber.Router, db *sql.DB, redis_db *redis.Client)
 
 	userRouting.Post("/login", middleware.LoggedOutMiddleware, userHandler.Login)
 	userRouting.Post("/register", middleware.LoggedOutMiddleware, userHandler.Register)
-	userRouting.Post("/logout", middleware.LoggedInStatusMiddleware, middleware.JWTMiddleware, userHandler.Logout)
+	userRouting.Post("/logout", middleware.JWTMiddleware, userHandler.Logout)
+	userRouting.Delete("/delete", middleware.JWTMiddleware, middleware.AdminMiddleware, userHandler.DeleteUser)
 }
 
 func RegisterFavoriteRoutes(router fiber.Router, db *mongo.Client, redis_db *redis.Client) {
@@ -32,6 +33,7 @@ func RegisterFavoriteRoutes(router fiber.Router, db *mongo.Client, redis_db *red
 	favoriteService := service.NewFavoriteService(favoriteRepository)
 	favoriteHandler := handler.NewFavoriteHandler(favoriteService, validator)
 
-	favoriteRouting.Get("/", middleware.LoggedInStatusMiddleware, middleware.JWTMiddleware, favoriteHandler.GetFavorites)
-	favoriteRouting.Post("/add", middleware.LoggedInStatusMiddleware, middleware.JWTMiddleware, favoriteHandler.AddFavorites)
+	favoriteRouting.Get("/", middleware.JWTMiddleware, middleware.UserMiddleware, favoriteHandler.GetFavorites)
+	favoriteRouting.Post("/add", middleware.JWTMiddleware, middleware.UserMiddleware, favoriteHandler.AddFavorites)
+	favoriteRouting.Delete("/remove", middleware.JWTMiddleware, middleware.UserMiddleware, favoriteHandler.RemoveFavorites)
 }

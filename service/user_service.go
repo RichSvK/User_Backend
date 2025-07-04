@@ -15,9 +15,10 @@ import (
 )
 
 type UserService interface {
-	LoginService(request request.LoginRequest, ctx context.Context) (int, string, any)
+	LoginService(request request.LoginRequest, ctx context.Context) (int, any)
 	RegisterService(request request.RegisterRequest, ctx context.Context) (int, any)
 	LogOutService(userId string, ctx context.Context) (int, any)
+	DeleteUserService(userId string, ctx context.Context) (int, any)
 }
 
 type UserServiceImpl struct {
@@ -30,10 +31,10 @@ func NewUserService(repository repository.UserRepository) UserService {
 	}
 }
 
-func (service *UserServiceImpl) LoginService(request request.LoginRequest, ctx context.Context) (int, string, any) {
+func (service *UserServiceImpl) LoginService(request request.LoginRequest, ctx context.Context) (int, any) {
 	user, err := service.Repository.GetUser(request.Email, ctx)
 	if err != nil {
-		return fiber.StatusNotFound, "",
+		return fiber.StatusNotFound,
 			response.Output{
 				Message: "User not found",
 				Time:    time.Now(),
@@ -42,7 +43,7 @@ func (service *UserServiceImpl) LoginService(request request.LoginRequest, ctx c
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(request.Password)); err != nil {
-		return fiber.StatusUnauthorized, "",
+		return fiber.StatusUnauthorized,
 			response.Output{
 				Message: "Wrong password",
 				Time:    time.Now(),
@@ -53,7 +54,7 @@ func (service *UserServiceImpl) LoginService(request request.LoginRequest, ctx c
 	userId := user.ID.String()
 	token, err := helper.GenerateJWT(userId, user.Email, user.Role)
 	if err != nil {
-		return fiber.StatusInternalServerError, "",
+		return fiber.StatusInternalServerError,
 			response.Output{
 				Message: "Internal server error",
 				Time:    time.Now(),
@@ -61,7 +62,7 @@ func (service *UserServiceImpl) LoginService(request request.LoginRequest, ctx c
 			}
 	}
 
-	return fiber.StatusOK, token,
+	return fiber.StatusOK,
 		response.Output{
 			Message: "Login Success",
 			Time:    time.Now(),
@@ -117,6 +118,22 @@ func (service *UserServiceImpl) LogOutService(userId string, ctx context.Context
 
 	return fiber.StatusOK, response.Output{
 		Message: "Logout Success",
+		Time:    time.Now(),
+		Data:    nil,
+	}
+}
+
+func (service *UserServiceImpl) DeleteUserService(userId string, ctx context.Context) (int, any) {
+	if err := service.Repository.DeleteUser(userId, ctx); err != nil {
+		return fiber.StatusInternalServerError, response.Output{
+			Message: "Internal server error",
+			Time:    time.Now(),
+			Data:    nil,
+		}
+	}
+
+	return fiber.StatusOK, response.Output{
+		Message: "User deleted successfully",
 		Time:    time.Now(),
 		Data:    nil,
 	}

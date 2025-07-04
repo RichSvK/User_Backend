@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"stock_backend/model/entity"
 
@@ -13,6 +14,7 @@ type UserRepository interface {
 	GetUser(email string, ctx context.Context) (*entity.User, error)
 	Create(user entity.User, ctx context.Context) error
 	Logout(userId string, ctx context.Context) error
+	DeleteUser(userId string, ctx context.Context) error
 }
 
 type UserRepositoryImpl struct {
@@ -28,11 +30,11 @@ func NewUserRepository(db *sql.DB, redis_db *redis.Client) UserRepository {
 }
 
 func (repository *UserRepositoryImpl) GetUser(email string, ctx context.Context) (*entity.User, error) {
-	query := "SELECT id, username, email, password FROM users WHERE email = $1"
+	query := "SELECT id, username, email, password, r.rolename FROM users u JOIN roles r ON u.roleid = r.roleid WHERE email = $1"
 	row := repository.DB.QueryRowContext(ctx, query, email)
 
 	var user entity.User
-	err := row.Scan(&user.ID, &user.Username, &user.Email, &user.Password)
+	err := row.Scan(&user.ID, &user.Username, &user.Email, &user.Password, &user.Role)
 	if err != nil {
 		return nil, err
 	}
@@ -48,5 +50,20 @@ func (repository *UserRepositoryImpl) Create(user entity.User, ctx context.Conte
 
 func (repository *UserRepositoryImpl) Logout(userId string, ctx context.Context) error {
 	// Remove user favorites from Redis cache
+	return repository.RedisDB.Del(ctx, fmt.Sprintf("favorites:%s", userId)).Err()
+}
+
+func (repository *UserRepositoryImpl) DeleteUser(userId string, ctx context.Context) error {
+	query := "DELETE FROM users WHERE id = $1 AND roleid = 1"
+	res, err := repository.DB.ExecContext(ctx, query, userId)
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, _ := res.RowsAffected()
+	if rowsAffected == 0 {
+		return errors.New("user not found")
+	}
+
 	return repository.RedisDB.Del(ctx, fmt.Sprintf("favorites:%s", userId)).Err()
 }

@@ -15,6 +15,7 @@ import (
 type FavoriteService interface {
 	CreateFavorite(userId string, request request.FavoriteUnderwriterRequest, ctx context.Context) (int, any)
 	GetFavoritesService(userId string, ctx context.Context) (int, any)
+	RemoveFavoriteService(userId string, ctx context.Context) (int, any)
 }
 
 type FavoriteServiceImpl struct {
@@ -27,7 +28,7 @@ func NewFavoriteService(repository repository.FavoriteRepository) FavoriteServic
 	}
 }
 
-func (s *FavoriteServiceImpl) CreateFavorite(userId string, request request.FavoriteUnderwriterRequest, ctx context.Context) (int, any) {
+func (service *FavoriteServiceImpl) CreateFavorite(userId string, request request.FavoriteUnderwriterRequest, ctx context.Context) (int, any) {
 	favorite := &entity.Favorite{
 		ID:           primitive.NewObjectID(),
 		UserID:       userId,
@@ -36,7 +37,7 @@ func (s *FavoriteServiceImpl) CreateFavorite(userId string, request request.Favo
 		UpdatedAt:    time.Now(),
 	}
 
-	err := s.Repository.Create(favorite, ctx)
+	err := service.Repository.Create(favorite, ctx)
 	if err != nil {
 		result := response.Output{
 			Message: "Add favorite failed",
@@ -54,8 +55,8 @@ func (s *FavoriteServiceImpl) CreateFavorite(userId string, request request.Favo
 	return fiber.StatusOK, result
 }
 
-func (s *FavoriteServiceImpl) GetFavoritesService(userId string, ctx context.Context) (int, any) {
-	favoriteData, err := s.Repository.GetFavorites(userId, ctx)
+func (service *FavoriteServiceImpl) GetFavoritesService(userId string, ctx context.Context) (int, any) {
+	favoriteData, err := service.Repository.GetFavorites(userId, ctx)
 	if err != nil {
 		result := response.Output{
 			Message: err.Error(),
@@ -69,6 +70,24 @@ func (s *FavoriteServiceImpl) GetFavoritesService(userId string, ctx context.Con
 		Message: "Favorite Found",
 		Time:    time.Now(),
 		Data:    favoriteData,
+	}
+	return fiber.StatusOK, result
+}
+
+func (service *FavoriteServiceImpl) RemoveFavoriteService(userId string, ctx context.Context) (int, any) {
+	if err := service.Repository.RemoveFavorite(userId, ctx); err != nil {
+		result := response.Output{
+			Message: "Internal server error",
+			Time:    time.Now(),
+			Data:    nil,
+		}
+		return fiber.StatusInternalServerError, result
+	}
+
+	result := response.Output{
+		Message: "Remove favorite success",
+		Time:    time.Now(),
+		Data:    nil,
 	}
 	return fiber.StatusOK, result
 }
