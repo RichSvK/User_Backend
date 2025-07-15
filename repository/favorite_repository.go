@@ -91,7 +91,7 @@ func (repository *FavoriteRepositoryImpl) GetFavorites(userId string, ctx contex
 	err = collection.FindOne(ctx, bson.M{"userId": userId}).Decode(&favorite)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
-			return nil, nil
+			return nil, err
 		}
 		return nil, err
 	}

@@ -13,7 +13,7 @@ func GenerateJWT(userID string, email string, role string) (string, error) {
 		"sub":   userID,
 		"email": email,
 		"role":  role,
-		"exp":   time.Now().Add(time.Hour * 1).Unix(),
+		"exp":   time.Now().Add(time.Minute * 5).Unix(),
 		"iat":   time.Now().Unix(),
 	}
 

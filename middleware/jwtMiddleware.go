@@ -14,12 +14,12 @@ func JWTMiddleware(c *fiber.Ctx) error {
 
 	// If the token is empty, allow the request to proceed
 	if auth == "" {
-		return c.Next()
+		return fiber.ErrUnauthorized
 	}
 
 	parts := strings.SplitN(auth, " ", 2)
 	if len(parts) != 2 || parts[0] != "Bearer" {
-		return c.Next()
+		return fiber.ErrUnauthorized
 	}
 	tokenStr := parts[1]
 
@@ -56,5 +56,6 @@ func JWTMiddleware(c *fiber.Ctx) error {
 		return fiber.ErrUnauthorized
 	}
 	c.Locals("role", role)
+	
 	return c.Next()
 }

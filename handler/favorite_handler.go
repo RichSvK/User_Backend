@@ -28,16 +28,32 @@ func NewFavoriteHandler(service service.FavoriteService, validator *validator.Va
 }
 
 func (handler *FavoriteHandlerImpl) GetFavorites(c *fiber.Ctx) error {
-	userId := c.Locals("userId").(string)
+	userId := c.Get("X-User-ID")
+	if userId == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(response.Output{
+			Message: "User ID is required",
+			Time:    time.Now(),
+			Data:    nil,
+		})
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	status, result := handler.Service.GetFavoritesService(userId, ctx)
+	status, result := handler.Service.GetFavorites(userId, ctx)
 
 	return c.Status(status).JSON(result)
 }
 
 func (handler *FavoriteHandlerImpl) AddFavorites(c *fiber.Ctx) error {
-	userId := c.Locals("userId").(string)
+	userId := c.Get("X-User-ID")
+	if userId == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(response.Output{
+			Message: "User ID is required",
+			Time:    time.Now(),
+			Data:    nil,
+		})
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
@@ -56,11 +72,18 @@ func (handler *FavoriteHandlerImpl) AddFavorites(c *fiber.Ctx) error {
 }
 
 func (handler *FavoriteHandlerImpl) RemoveFavorites(c *fiber.Ctx) error {
-	userId := c.Locals("userId").(string)
+	userId := c.Get("X-User-ID")
+	if userId == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(response.Output{
+			Message: "User ID is required",
+			Time:    time.Now(),
+			Data:    nil,
+		})
+	}
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	status, result := handler.Service.RemoveFavoriteService(userId, ctx)
+	status, result := handler.Service.RemoveFavorite(userId, ctx)
 
 	return c.Status(status).JSON(result)
 }

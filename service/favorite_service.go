@@ -14,8 +14,8 @@ import (
 
 type FavoriteService interface {
 	CreateFavorite(userId string, request request.FavoriteUnderwriterRequest, ctx context.Context) (int, any)
-	GetFavoritesService(userId string, ctx context.Context) (int, any)
-	RemoveFavoriteService(userId string, ctx context.Context) (int, any)
+	GetFavorites(userId string, ctx context.Context) (int, any)
+	RemoveFavorite(userId string, ctx context.Context) (int, any)
 }
 
 type FavoriteServiceImpl struct {
@@ -55,7 +55,7 @@ func (service *FavoriteServiceImpl) CreateFavorite(userId string, request reques
 	return fiber.StatusOK, result
 }
 
-func (service *FavoriteServiceImpl) GetFavoritesService(userId string, ctx context.Context) (int, any) {
+func (service *FavoriteServiceImpl) GetFavorites(userId string, ctx context.Context) (int, any) {
 	favoriteData, err := service.Repository.GetFavorites(userId, ctx)
 	if err != nil {
 		result := response.Output{
@@ -74,7 +74,7 @@ func (service *FavoriteServiceImpl) GetFavoritesService(userId string, ctx conte
 	return fiber.StatusOK, result
 }
 
-func (service *FavoriteServiceImpl) RemoveFavoriteService(userId string, ctx context.Context) (int, any) {
+func (service *FavoriteServiceImpl) RemoveFavorite(userId string, ctx context.Context) (int, any) {
 	if err := service.Repository.RemoveFavorite(userId, ctx); err != nil {
 		result := response.Output{
 			Message: "Internal server error",

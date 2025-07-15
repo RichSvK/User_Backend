@@ -111,7 +111,15 @@ func (handler *UserHandlerImpl) Logout(c *fiber.Ctx) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	userId := c.Locals("userId").(string)
+	userId := c.Get("X-User-ID")
+	fmt.Println("User ID:", userId)
+	if userId == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(response.Output{
+			Message: "User ID is required",
+			Time:    time.Now(),
+			Data:    nil,
+		})
+	}
 	status, result := handler.UserService.LogOutService(userId, ctx)
 
 	return c.Status(status).JSON(result)

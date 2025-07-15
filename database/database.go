@@ -19,7 +19,6 @@ func DatabaseConfig() (*sql.DB, error) {
 		os.Getenv("DB_PORT"),
 		os.Getenv("DB_NAME"),
 	)
-	fmt.Println(dsn)
 
 	db, err := sql.Open("postgres", dsn)
 	if err != nil {

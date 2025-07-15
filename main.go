@@ -4,7 +4,6 @@ import (
 	"context"
 	"log"
 	"stock_backend/database"
-	"stock_backend/middleware"
 	"stock_backend/router"
 	"time"
 
@@ -32,8 +31,6 @@ func main() {
 
 	// Middleware
 	app.Use(logger.New())
-	middleware.CorsMiddleware(app)
-	middleware.RateLimitMiddleware(app)
 
 	err := godotenv.Load()
 	if err != nil {
