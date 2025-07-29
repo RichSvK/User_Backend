@@ -18,6 +18,7 @@ type UserHandler interface {
 	Register(c *fiber.Ctx) error
 	Logout(c *fiber.Ctx) error
 	DeleteUser(c *fiber.Ctx) error
+	GetUserInfo(c *fiber.Ctx) error
 }
 
 type UserHandlerImpl struct {
@@ -148,5 +149,23 @@ func (handler *UserHandlerImpl) DeleteUser(c *fiber.Ctx) error {
 
 	status, result := handler.UserService.DeleteUserService(deleteRequest.UserId, ctx)
 
+	return c.Status(status).JSON(result)
+}
+
+func (handler *UserHandlerImpl) GetUserInfo(c *fiber.Ctx) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	userId := c.Get("X-User-ID")
+	if userId == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(response.Output{
+			Message: "User ID is required",
+			Time:    time.Now(),
+			Data:    nil,
+		})
+	}
+
+	status, result := handler.UserService.GetUserProfile(userId, ctx)
+	
 	return c.Status(status).JSON(result)
 }

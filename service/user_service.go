@@ -19,6 +19,7 @@ type UserService interface {
 	RegisterService(request request.RegisterRequest, ctx context.Context) (int, any)
 	LogOutService(userId string, ctx context.Context) (int, any)
 	DeleteUserService(userId string, ctx context.Context) (int, any)
+	GetUserProfile(userId string, ctx context.Context) (int, any)
 }
 
 type UserServiceImpl struct {
@@ -137,4 +138,26 @@ func (service *UserServiceImpl) DeleteUserService(userId string, ctx context.Con
 		Time:    time.Now(),
 		Data:    nil,
 	}
+}
+
+func (service *UserServiceImpl) GetUserProfile(userId string, ctx context.Context) (int, any) {
+	user, err := service.Repository.GetUserByID(userId, ctx)
+	if err != nil {
+		return fiber.StatusNotFound,
+			response.Output{
+				Message: "User not found",
+				Time:    time.Now(),
+				Data:    nil,
+			}
+	}
+
+	return fiber.StatusOK,
+		response.Output{
+			Message: "User profile retrieved successfully",
+			Time:    time.Now(),
+			Data: map[string]string{
+				"username": user.Username,
+				"email":    user.Email,
+			},
+		}
 }

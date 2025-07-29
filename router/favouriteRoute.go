@@ -1,7 +1,6 @@
 package router
 
 import (
-	"database/sql"
 	"stock_backend/handler"
 	"stock_backend/repository"
 	"stock_backend/service"
@@ -11,21 +10,6 @@ import (
 	"github.com/redis/go-redis/v9"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 )
-
-func RegisterUserRoutes(router fiber.Router, db *sql.DB, redis_db *redis.Client) {
-	validator := validator.New()
-	userRepository := repository.NewUserRepository(db, redis_db)
-	userService := service.NewUserService(userRepository)
-	userHandler := handler.NewUserHandler(userService, validator)
-
-	userRouting := router.Group("/api/user")
-	userRouting.Post("/login", userHandler.Login)
-	userRouting.Post("/register", userHandler.Register)
-
-	authRouting := router.Group("/api/auth/user")
-	authRouting.Post("/logout", userHandler.Logout)
-	authRouting.Delete("/delete", userHandler.DeleteUser)
-}
 
 func RegisterFavoriteRoutes(router fiber.Router, db *mongo.Client, redis_db *redis.Client) {
 	favoriteRouting := router.Group("/api/auth/favorites")

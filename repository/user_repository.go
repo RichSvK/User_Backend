@@ -15,6 +15,7 @@ type UserRepository interface {
 	Create(user entity.User, ctx context.Context) error
 	Logout(userId string, ctx context.Context) error
 	DeleteUser(userId string, ctx context.Context) error
+	GetUserByID(userId string, ctx context.Context) (*entity.User, error)
 }
 
 type UserRepositoryImpl struct {
@@ -66,4 +67,17 @@ func (repository *UserRepositoryImpl) DeleteUser(userId string, ctx context.Cont
 	}
 
 	return repository.RedisDB.Del(ctx, fmt.Sprintf("favorites:%s", userId)).Err()
+}
+
+func (repository *UserRepositoryImpl) GetUserByID(userId string, ctx context.Context) (*entity.User, error) {
+	query := "SELECT id, username, email FROM users WHERE id = $1"
+	row := repository.DB.QueryRowContext(ctx, query, userId)
+
+	var user entity.User
+	err := row.Scan(&user.ID, &user.Username, &user.Email)
+	if err != nil {
+		return nil, err
+	}
+
+	return &user, nil
 }
