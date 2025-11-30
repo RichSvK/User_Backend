@@ -84,7 +84,7 @@ func (service *UserServiceImpl) RegisterService(request request.RegisterRequest,
 			}
 	}
 
-	var user entity.User = entity.User{
+	user := entity.User{
 		ID:       uuid.New(),
 		Username: request.Username,
 		Email:    request.Email,

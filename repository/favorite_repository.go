@@ -47,8 +47,8 @@ func (repository *FavoriteRepositoryImpl) Create(favorite *entity.Favorite, ctx 
 				return err
 			}
 
-			repository.AddFavoriteCache(cacheKey, favorite, ctx)
-			return nil
+			// Add to cache
+			_ = repository.AddFavoriteCache(cacheKey, favorite, ctx)
 		}
 
 		return err
@@ -67,7 +67,7 @@ func (repository *FavoriteRepositoryImpl) Create(favorite *entity.Favorite, ctx 
 	var updatedFavorite entity.Favorite
 	err = collection.FindOne(ctx, filter).Decode(&updatedFavorite)
 	if err == nil {
-		repository.AddFavoriteCache(cacheKey, &updatedFavorite, ctx)
+		_ = repository.AddFavoriteCache(cacheKey, &updatedFavorite, ctx)
 	}
 	return err
 }
@@ -96,7 +96,7 @@ func (repository *FavoriteRepositoryImpl) GetFavorites(userId string, ctx contex
 		return nil, err
 	}
 
-	repository.AddFavoriteCache(cacheKey, &favorite, ctx)
+	_ = repository.AddFavoriteCache(cacheKey, &favorite, ctx)
 
 	return &favorite, nil
 }
