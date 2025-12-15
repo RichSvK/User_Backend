@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"fmt"
 	"stock_backend/model/entity"
 
 	"github.com/redis/go-redis/v9"
@@ -51,7 +50,8 @@ func (repository *UserRepositoryImpl) Create(user entity.User, ctx context.Conte
 
 func (repository *UserRepositoryImpl) Logout(userId string, ctx context.Context) error {
 	// Remove user favorites from Redis cache
-	return repository.RedisDB.Del(ctx, fmt.Sprintf("favorites:%s", userId)).Err()
+	// return repository.RedisDB.Del(ctx, fmt.Sprintf("favorites:%s", userId)).Err()
+	return nil
 }
 
 func (repository *UserRepositoryImpl) DeleteUser(userId string, ctx context.Context) error {
@@ -66,7 +66,8 @@ func (repository *UserRepositoryImpl) DeleteUser(userId string, ctx context.Cont
 		return errors.New("user not found")
 	}
 
-	return repository.RedisDB.Del(ctx, fmt.Sprintf("favorites:%s", userId)).Err()
+	// return repository.RedisDB.Del(ctx, fmt.Sprintf("favorites:%s", userId)).Err()
+	return nil
 }
 
 func (repository *UserRepositoryImpl) GetUserByID(userId string, ctx context.Context) (*entity.User, error) {

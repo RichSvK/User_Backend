@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"log"
 	"stock_backend/database"
 	"stock_backend/router"
@@ -32,38 +31,38 @@ func main() {
 	// Middleware
 	app.Use(logger.New())
 
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatalf("Error loading .env file")
+	if err := godotenv.Load(); err != nil {
+		log.Println("Error loading local .env file")
 	}
 
 	db, err := database.DatabaseConfig()
 	if err != nil {
 		log.Fatal(err.Error())
 	}
+	
 	defer func() {
 		if err := db.Close(); err != nil {
 			log.Printf("Failed to close DB: %v", err)
 		}
 	}()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
+	// ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	// defer cancel()
 
-	db_favorite, err := database.ConnectMongoDB(ctx)
-	if err != nil {
-		log.Fatal(err.Error())
-	}
+	// db_favorite, err := database.ConnectMongoDB(ctx)
+	// if err != nil {
+	// 	log.Fatal(err.Error())
+	// }
 
-	redisDb, err := database.ConnectRedis()
-	if err != nil {
-		log.Fatal(err.Error())
-	}
+	// redisDb, err := database.ConnectRedis()
+	// if err != nil {
+	// 	log.Fatal(err.Error())
+	// }
 
 	// Routes Grouping
-	router.RegisterUserRoutes(app, db, redisDb)
-	router.RegisterFavoriteRoutes(app, db_favorite, redisDb)
+	router.RegisterUserRoutes(app, db, nil)
 	router.RegisterWatchlistRoutes(app, db)
+	// router.RegisterFavoriteRoutes(app, db_favorite, redisDb)
 
 	// Run the app
 	if err := app.Listen(":8888"); err != nil {
