@@ -63,6 +63,7 @@ func main() {
 	// Routes Grouping
 	router.RegisterUserRoutes(app, db, redisDb)
 	router.RegisterFavoriteRoutes(app, db_favorite, redisDb)
+	router.RegisterWatchlistRoutes(app, db)
 
 	// Run the app
 	if err := app.Listen(":8888"); err != nil {
