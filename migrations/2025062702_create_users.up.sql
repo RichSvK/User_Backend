@@ -2,7 +2,7 @@ CREATE TABLE users (
     id UUID PRIMARY KEY NOT NULL,
     username VARCHAR(100) NOT NULL,
     email VARCHAR(30) UNIQUE NOT NULL,
-    password VARCHAR(20) NOT NULL,
+    password TEXT NOT NULL,
     roleId INT NOT NULL DEFAULT 1,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),

@@ -44,7 +44,7 @@ func (repository *UserRepositoryImpl) GetUser(email string, ctx context.Context)
 
 func (repository *UserRepositoryImpl) Create(user entity.User, ctx context.Context) error {
 	query := "INSERT INTO users (id, username, email, password) VALUES ($1, $2, $3, $4)"
-	_, err := repository.DB.ExecContext(ctx, query, user.ID, user.Username, user.Email, user.Password)
+	_, err := repository.DB.ExecContext(ctx, query, user.ID.String(), user.Username, user.Email, user.Password)
 	return err
 }
 
