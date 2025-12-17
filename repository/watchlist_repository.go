@@ -37,6 +37,7 @@ func (repository *WatchlistRepositoryImpl) RemoveWatchlist(ctx context.Context, 
 func (repository *WatchlistRepositoryImpl) GetWatchlistByUserID(ctx context.Context, userId string) ([]string, error) {
 	query := "SELECT stock FROM watchlist WHERE userid = $1"
 	rows, err := repository.DB.QueryContext(ctx, query, userId)
+
 	if err != nil {
 		return nil, err
 	}
@@ -51,12 +52,14 @@ func (repository *WatchlistRepositoryImpl) GetWatchlistByUserID(ctx context.Cont
 	for rows.Next() {
 		var stock string
 		if err := rows.Scan(&stock); err != nil {
+			log.Println(err.Error())
 			return nil, err
 		}
 		watchlist = append(watchlist, stock)
 	}
 
 	if err := rows.Err(); err != nil {
+		log.Println(err.Error())
 		return nil, err
 	}
 

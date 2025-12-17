@@ -59,9 +59,9 @@ func (service *WatchlistServiceImpl) GetWatchlist(ctx context.Context, userId st
 		}
 	}
 
-	if watchlist == nil {
-		return 404, response.GetWatchlistResponse{
-			Message: "No watchlist found for user",
+	if len(watchlist) == 0 {
+		return 200, response.GetWatchlistResponse{
+			Message: "User doesn't have any watchlist",
 			Stocks:  nil,
 		}
 	}

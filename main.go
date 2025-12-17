@@ -31,6 +31,7 @@ func main() {
 	// Middleware
 	app.Use(logger.New())
 
+	// Load local environment variables => not in production
 	if err := godotenv.Load(); err != nil {
 		log.Println("Error loading local .env file")
 	}
@@ -39,10 +40,10 @@ func main() {
 	if err != nil {
 		log.Fatal(err.Error())
 	}
-	
+
 	defer func() {
 		if err := db.Close(); err != nil {
-			log.Printf("Failed to close DB: %v", err)
+			log.Printf("Failed to close DB: %v\n", err)
 		}
 	}()
 

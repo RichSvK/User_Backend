@@ -17,7 +17,7 @@ func RegisterWatchlistRoutes(router fiber.Router, db *sql.DB) {
 	watchlistHandler := handler.NewWatchlistHandler(watchlistService, validator)
 
 	authRouting := router.Group("/api/auth/watchlist")
-	authRouting.Post("/", watchlistHandler.AddWatchlist)
-	authRouting.Delete("/", watchlistHandler.RemoveWatchlist)
 	authRouting.Get("/", watchlistHandler.GetWatchlist)
+	authRouting.Post("/", watchlistHandler.AddWatchlist)
+	authRouting.Delete("/:stock", watchlistHandler.RemoveWatchlist)
 }

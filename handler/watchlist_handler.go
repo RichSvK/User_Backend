@@ -54,7 +54,7 @@ func (handler *WatchlistHandlerImpl) AddWatchlist(c *fiber.Ctx) error {
 
 func (handler *WatchlistHandlerImpl) RemoveWatchlist(c *fiber.Ctx) error {
 	userId := c.Get("X-User-ID")
-	stock := c.Query("stock")
+	stock := c.Params("stock")
 	status, result := handler.Service.RemoveFromWatchlist(c.Context(), userId, stock)
 	return c.Status(status).JSON(result)
 }

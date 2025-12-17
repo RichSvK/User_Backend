@@ -22,7 +22,7 @@ func RegisterUserRoutes(router fiber.Router, db *sql.DB, redis_db *redis.Client)
 	userRouting.Post("/register", userHandler.Register)
 
 	authRouting := router.Group("/api/auth/user")
+	authRouting.Get("/profile", userHandler.GetUserInfo)
 	authRouting.Post("/logout", userHandler.Logout)
 	authRouting.Delete("/delete", userHandler.DeleteUser)
-	authRouting.Get("/profile", userHandler.GetUserInfo)
 }

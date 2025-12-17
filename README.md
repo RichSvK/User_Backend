@@ -15,13 +15,12 @@ Software used in developing this program:
 - Fiber Web Framework
 - PostgreSQL
 - Redis
-- Text Editor: Visual Studio Code
 
 ## API Endpoints
 ### Watchlist Management
 - `GET /api/auth/watchlist` - Retrieve user's stock watchlist
 - `POST /api/auth/watchlist` - Add stock to watchlist
-- `DELETE /api/auth/watchlist/:symbol` - Remove stock from watchlist
+- `DELETE /api/auth/watchlist/:stock` - Remove stock from watchlist
 
 ### Authentication
 - `POST /api/user/register` - Create new user account

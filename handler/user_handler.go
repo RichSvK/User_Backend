@@ -113,7 +113,6 @@ func (handler *UserHandlerImpl) Logout(c *fiber.Ctx) error {
 	defer cancel()
 
 	userId := c.Get("X-User-ID")
-	fmt.Println("User ID:", userId)
 	if userId == "" {
 		return c.Status(fiber.StatusBadRequest).JSON(response.Output{
 			Message: "User ID is required",
@@ -166,6 +165,6 @@ func (handler *UserHandlerImpl) GetUserInfo(c *fiber.Ctx) error {
 	}
 
 	status, result := handler.UserService.GetUserProfile(userId, ctx)
-	
+
 	return c.Status(status).JSON(result)
 }
