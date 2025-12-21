@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"log"
+	domain_error "stock_backend/model/error"
 )
 
 type WatchlistRepository interface {
@@ -25,13 +26,31 @@ func NewWatchlistRepository(db *sql.DB) WatchlistRepository {
 func (repository *WatchlistRepositoryImpl) AddWatchlist(ctx context.Context, userId string, stock string) error {
 	query := "INSERT INTO watchlist (userid, stock) VALUES ($1, $2)"
 	_, err := repository.DB.ExecContext(ctx, query, userId, stock)
-	return err
+
+	if err != nil {
+		return domain_error.ErrInternal
+	}
+
+	return nil
 }
 
 func (repository *WatchlistRepositoryImpl) RemoveWatchlist(ctx context.Context, userId string, stock string) error {
 	query := "DELETE FROM watchlist WHERE userid = $1 AND stock = $2"
-	_, err := repository.DB.ExecContext(ctx, query, userId, stock)
-	return err
+	res, err := repository.DB.ExecContext(ctx, query, userId, stock)
+	if err != nil {
+		return domain_error.ErrInternal
+	}
+
+	rowsAffected, err := res.RowsAffected()
+	if err != nil {
+		return domain_error.ErrInternal
+	}
+
+	if rowsAffected == 0 {
+		return domain_error.ErrWatchlistNotFound
+	}
+
+	return nil
 }
 
 func (repository *WatchlistRepositoryImpl) GetWatchlistByUserID(ctx context.Context, userId string) ([]string, error) {
@@ -39,12 +58,13 @@ func (repository *WatchlistRepositoryImpl) GetWatchlistByUserID(ctx context.Cont
 	rows, err := repository.DB.QueryContext(ctx, query, userId)
 
 	if err != nil {
-		return nil, err
+		log.Printf("query watchlist failed: %v\n", err)
+		return nil, domain_error.ErrInternal
 	}
 
 	defer func() {
-		if err := rows.Close(); err != nil {
-			log.Println(err)
+		if cerr := rows.Close(); cerr != nil {
+			log.Printf("failed to close rows: %v\n", cerr)
 		}
 	}()
 
@@ -52,15 +72,15 @@ func (repository *WatchlistRepositoryImpl) GetWatchlistByUserID(ctx context.Cont
 	for rows.Next() {
 		var stock string
 		if err := rows.Scan(&stock); err != nil {
-			log.Println(err.Error())
-			return nil, err
+			log.Printf("scan watchlist row failed: %v", err)
+			return nil, domain_error.ErrInternal
 		}
 		watchlist = append(watchlist, stock)
 	}
 
 	if err := rows.Err(); err != nil {
-		log.Println(err.Error())
-		return nil, err
+		log.Printf("row iteration failed: %v", err)
+		return nil, domain_error.ErrInternal
 	}
 
 	return watchlist, nil

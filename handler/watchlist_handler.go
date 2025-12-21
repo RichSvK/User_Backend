@@ -1,7 +1,9 @@
 package handler
 
 import (
+	"fmt"
 	"stock_backend/model/request"
+	"stock_backend/model/response"
 	"stock_backend/service"
 
 	"github.com/go-playground/validator/v10"
@@ -28,8 +30,17 @@ func NewWatchlistHandler(service service.WatchlistService, validator *validator.
 
 func (handler *WatchlistHandlerImpl) GetWatchlist(c *fiber.Ctx) error {
 	userId := c.Get("X-User-ID")
-	status, result := handler.Service.GetWatchlist(c.Context(), userId)
-	return c.Status(status).JSON(result)
+	result, err := handler.Service.GetWatchlist(c.Context(), userId)
+	if err != nil {
+		return c.Status(MapErrorToHTTPStatus(err)).JSON(response.FailedResponse{
+			Message: err.Error(),
+		})
+	}
+
+	return c.Status(fiber.StatusOK).JSON(response.GetWatchlistResponse{
+		Message: "Watchlist retrieved successfully",
+		Stocks:  result,
+	})
 }
 
 func (handler *WatchlistHandlerImpl) AddWatchlist(c *fiber.Ctx) error {
@@ -37,24 +48,39 @@ func (handler *WatchlistHandlerImpl) AddWatchlist(c *fiber.Ctx) error {
 
 	var req request.AddWatchlistRequest
 	if err := c.BodyParser(&req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"message": "Invalid request body",
+		return c.Status(fiber.StatusBadRequest).JSON(response.FailedResponse{
+			Message: "Invalid request",
 		})
 	}
 
 	if req.Stock == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"message": "Stock is required",
+		return c.Status(fiber.StatusBadRequest).JSON(response.FailedResponse{
+			Message: "Stock is required",
+		})
+	}
+	
+	if err := handler.Service.AddToWatchlist(c.Context(), userId, req.Stock); err != nil {
+		return c.Status(MapErrorToHTTPStatus(err)).JSON(response.FailedResponse{
+			Message: err.Error(),
 		})
 	}
 
-	status, result := handler.Service.AddToWatchlist(c.Context(), userId, req.Stock)
-	return c.Status(status).JSON(result)
+	return c.Status(fiber.StatusCreated).JSON(response.WatchlistResponse{
+		Message: fmt.Sprintf("Successfully added %s to watchlist", req.Stock),
+	})
 }
 
 func (handler *WatchlistHandlerImpl) RemoveWatchlist(c *fiber.Ctx) error {
 	userId := c.Get("X-User-ID")
 	stock := c.Params("stock")
-	status, result := handler.Service.RemoveFromWatchlist(c.Context(), userId, stock)
-	return c.Status(status).JSON(result)
+
+	if err := handler.Service.RemoveFromWatchlist(c.Context(), userId, stock); err != nil {
+		return c.Status(MapErrorToHTTPStatus(err)).JSON(response.FailedResponse{
+			Message: err.Error(),
+		})
+	}
+
+	return c.Status(fiber.StatusOK).JSON(response.WatchlistResponse{
+		Message: fmt.Sprintf("Successfully removed %s from watchlist", stock),
+	})
 }

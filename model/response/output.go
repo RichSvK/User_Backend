@@ -7,3 +7,7 @@ type Output struct {
 	Time    time.Time `json:"time"`
 	Data    any       `json:"data"`
 }
+
+type FailedResponse struct {
+	Message string `json:"message"`
+}

@@ -37,10 +37,8 @@ func NewUserHandler(service service.UserService, validator *validator.Validate) 
 func (handler *UserHandlerImpl) Login(c *fiber.Ctx) error {
 	var loginRequest request.LoginRequest
 	if err := c.BodyParser(&loginRequest); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(response.Output{
+		return c.Status(fiber.StatusBadRequest).JSON(response.FailedResponse{
 			Message: "Invalid request",
-			Time:    time.Now(),
-			Data:    nil,
 		})
 	}
 
@@ -62,69 +60,80 @@ func (handler *UserHandlerImpl) Login(c *fiber.Ctx) error {
 				msg = fmt.Sprintf("%s is invalid", field)
 			}
 
-			return c.Status(fiber.StatusBadRequest).JSON(response.Output{
+			return c.Status(fiber.StatusBadRequest).JSON(response.FailedResponse{
 				Message: msg,
-				Time:    time.Now(),
-				Data:    nil,
 			})
 		}
 
-		return c.Status(fiber.StatusBadRequest).JSON(response.Output{
-			Message: "Invalid request failed",
-			Time:    time.Now(),
-			Data:    nil,
+		return c.Status(fiber.StatusBadRequest).JSON(response.FailedResponse{
+			Message: "Invalid request",
 		})
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	status, result := handler.UserService.LoginService(loginRequest, ctx)
+	result, err := handler.UserService.Login(loginRequest, ctx)
+	if err != nil {
+		return c.Status(MapErrorToHTTPStatus(err)).JSON(response.FailedResponse{
+			Message: err.Error(),
+		})
+	}
 
-	return c.Status(status).JSON(result)
+	return c.Status(fiber.StatusOK).JSON(map[string]any{
+		"message": "Login successful",
+		"token":   result,
+	})
 }
 
 func (handler *UserHandlerImpl) Register(c *fiber.Ctx) error {
 	var registerRequest request.RegisterRequest
 	if err := c.BodyParser(&registerRequest); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(response.Output{
+		return c.Status(fiber.StatusBadRequest).JSON(response.FailedResponse{
 			Message: "Invalid request",
-			Time:    time.Now(),
-			Data:    nil,
 		})
 	}
 
 	if err := handler.Validator.Struct(registerRequest); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(response.Output{
+		return c.Status(fiber.StatusBadRequest).JSON(response.FailedResponse{
 			Message: "Validation failed",
-			Time:    time.Now(),
-			Data:    err.Error(),
 		})
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
-	status, result := handler.UserService.RegisterService(registerRequest, ctx)
 
-	return c.Status(status).JSON(result)
+	if err := handler.UserService.Register(registerRequest, ctx); err != nil {
+		return c.Status(MapErrorToHTTPStatus(err)).JSON(response.FailedResponse{
+			Message: err.Error(),
+		})
+	}
+
+	return c.Status(fiber.StatusCreated).JSON(response.Output{
+		Message: "User registered successfully",
+	})
 }
 
 func (handler *UserHandlerImpl) VerifyUser(c *fiber.Ctx) error {
 	token := c.Query("token")
 	if token == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(response.Output{
+		return c.Status(fiber.StatusBadRequest).JSON(response.FailedResponse{
 			Message: "Token is required",
-			Time:    time.Now(),
-			Data:    nil,
 		})
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 
-	status, result := handler.UserService.VerifyUserService(token, ctx)
+	if err := handler.UserService.VerifyUser(token, ctx); err != nil {
+		return c.Status(MapErrorToHTTPStatus(err)).JSON(response.FailedResponse{
+			Message: err.Error(),
+		})
+	}
 
-	return c.Status(status).JSON(result)
+	return c.Status(fiber.StatusOK).JSON(response.Output{
+		Message: "User verified successfully",
+	})
 }
 
 func (handler *UserHandlerImpl) Logout(c *fiber.Ctx) error {
@@ -133,15 +142,20 @@ func (handler *UserHandlerImpl) Logout(c *fiber.Ctx) error {
 
 	userId := c.Get("X-User-ID")
 	if userId == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(response.Output{
+		return c.Status(fiber.StatusBadRequest).JSON(response.FailedResponse{
 			Message: "User ID is required",
-			Time:    time.Now(),
-			Data:    nil,
 		})
 	}
-	status, result := handler.UserService.LogOutService(userId, ctx)
 
-	return c.Status(status).JSON(result)
+	if err := handler.UserService.Logout(userId, ctx); err != nil {
+		return c.Status(MapErrorToHTTPStatus(err)).JSON(response.FailedResponse{
+			Message: err.Error(),
+		})
+	}
+
+	return c.Status(fiber.StatusOK).JSON(response.Output{
+		Message: "Logout successful",
+	})
 }
 
 func (handler *UserHandlerImpl) DeleteUser(c *fiber.Ctx) error {
@@ -150,24 +164,26 @@ func (handler *UserHandlerImpl) DeleteUser(c *fiber.Ctx) error {
 
 	var deleteRequest request.DeleteUserRequest
 	if err := c.BodyParser(&deleteRequest); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(response.Output{
+		return c.Status(fiber.StatusBadRequest).JSON(response.FailedResponse{
 			Message: "Invalid request",
-			Time:    time.Now(),
-			Data:    nil,
 		})
 	}
 
 	if err := handler.Validator.Struct(deleteRequest); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(response.Output{
+		return c.Status(fiber.StatusBadRequest).JSON(response.FailedResponse{
 			Message: "Validation failed",
-			Time:    time.Now(),
-			Data:    err.Error(),
 		})
 	}
 
-	status, result := handler.UserService.DeleteUserService(deleteRequest.UserId, ctx)
+	if err := handler.UserService.DeleteUser(deleteRequest.UserId, ctx); err != nil {
+		return c.Status(MapErrorToHTTPStatus(err)).JSON(response.FailedResponse{
+			Message: err.Error(),
+		})
+	}
 
-	return c.Status(status).JSON(result)
+	return c.Status(fiber.StatusOK).JSON(response.Output{
+		Message: "User deleted successfully",
+	})
 }
 
 func (handler *UserHandlerImpl) GetUserInfo(c *fiber.Ctx) error {
@@ -176,14 +192,17 @@ func (handler *UserHandlerImpl) GetUserInfo(c *fiber.Ctx) error {
 
 	userId := c.Get("X-User-ID")
 	if userId == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(response.Output{
+		return c.Status(fiber.StatusBadRequest).JSON(response.FailedResponse{
 			Message: "User ID is required",
-			Time:    time.Now(),
-			Data:    nil,
 		})
 	}
 
-	status, result := handler.UserService.GetUserProfile(userId, ctx)
+	result, err := handler.UserService.GetProfile(userId, ctx)
+	if err != nil {
+		return c.Status(MapErrorToHTTPStatus(err)).JSON(response.FailedResponse{
+			Message: err.Error(),
+		})
+	}
 
-	return c.Status(status).JSON(result)
+	return c.Status(fiber.StatusOK).JSON(result)
 }

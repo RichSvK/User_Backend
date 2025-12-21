@@ -44,10 +44,8 @@ func LoggedOutMiddleware(c *fiber.Ctx) error {
 	// Check for expired date JWT
 	exp, ok := claims["exp"].(float64)
 	if ok && int64(exp) > time.Now().Unix() {
-		return c.Status(fiber.StatusBadRequest).JSON(response.Output{
+		return c.Status(fiber.StatusBadRequest).JSON(response.FailedResponse{
 			Message: "You are already logged in",
-			Time:    time.Now(),
-			Data:    nil,
 		})
 	}
 

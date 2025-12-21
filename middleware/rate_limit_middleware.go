@@ -14,10 +14,8 @@ func RateLimitMiddleware(app *fiber.App) {
 		Expiration: 60 * time.Second,
 
 		LimitReached: func(c *fiber.Ctx) error {
-			return c.Status(fiber.StatusTooManyRequests).JSON(response.Output{
+			return c.Status(fiber.StatusTooManyRequests).JSON(response.FailedResponse{
 				Message: "Too many requests",
-				Time:    time.Now(),
-				Data:    nil,
 			})
 		},
 	}))

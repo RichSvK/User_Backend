@@ -3,14 +3,14 @@ package service
 import (
 	"context"
 	"fmt"
-	"stock_backend/model/response"
+	domain_error "stock_backend/model/error"
 	"stock_backend/repository"
 )
 
 type WatchlistService interface {
-	AddToWatchlist(ctx context.Context, userId string, stock string) (int, any)
-	RemoveFromWatchlist(ctx context.Context, userId string, stock string) (int, any)
-	GetWatchlist(ctx context.Context, userId string) (int, any)
+	AddToWatchlist(ctx context.Context, userId string, stock string) error
+	RemoveFromWatchlist(ctx context.Context, userId string, stock string) error
+	GetWatchlist(ctx context.Context, userId string) ([]string, error)
 }
 
 type WatchlistServiceImpl struct {
@@ -22,52 +22,29 @@ func NewWatchlistService(repository repository.WatchlistRepository) WatchlistSer
 		Repository: repository,
 	}
 }
-func (service *WatchlistServiceImpl) AddToWatchlist(ctx context.Context, userId string, stock string) (int, any) {
+
+func (service *WatchlistServiceImpl) AddToWatchlist(ctx context.Context, userId string, stock string) error {
+	fmt.Println("Adding to watchlist:", userId, stock)
 	err := service.Repository.AddWatchlist(ctx, userId, stock)
-
-	if err != nil {
-		return 500, response.WatchlistResponse{
-			Message: fmt.Sprintf("Failed to add %s to watchlist", stock),
-		}
-	}
-
-	return 201, response.WatchlistResponse{
-		Message: fmt.Sprintf("Successfully added %s to watchlist", stock),
-	}
+	return err
 }
 
-func (service *WatchlistServiceImpl) RemoveFromWatchlist(ctx context.Context, userId string, stock string) (int, any) {
+func (service *WatchlistServiceImpl) RemoveFromWatchlist(ctx context.Context, userId string, stock string) error {
 	err := service.Repository.RemoveWatchlist(ctx, userId, stock)
-
-	if err != nil {
-		return 500, response.WatchlistResponse{
-			Message: fmt.Sprintf("Failed to remove %s from watchlist", stock),
-		}
-	}
-
-	return 200, response.WatchlistResponse{
-		Message: fmt.Sprintf("Successfully removed %s from watchlist", stock),
-	}
+	return err
 }
 
-func (service *WatchlistServiceImpl) GetWatchlist(ctx context.Context, userId string) (int, any) {
+func (service *WatchlistServiceImpl) GetWatchlist(ctx context.Context, userId string) ([]string, error) {
 	watchlist, err := service.Repository.GetWatchlistByUserID(ctx, userId)
+	fmt.Println("Adding to watchlist:", userId)
+
 	if err != nil {
-		return 500, response.GetWatchlistResponse{
-			Message: "Failed to retrieve watchlist",
-			Stocks:  nil,
-		}
+		return nil, err
 	}
 
 	if len(watchlist) == 0 {
-		return 200, response.GetWatchlistResponse{
-			Message: "User doesn't have any watchlist",
-			Stocks:  nil,
-		}
+		return nil, domain_error.ErrWatchlistNotFound
 	}
 
-	return 200, response.GetWatchlistResponse{
-		Message: "Watchlist retrieved successfully",
-		Stocks:  watchlist,
-	}
+	return watchlist, nil
 }

@@ -2,30 +2,30 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"net/smtp"
 	"os"
 	"stock_backend/helper"
 	"stock_backend/model/entity"
+	domain_error "stock_backend/model/error"
 	"stock_backend/model/request"
-	"stock_backend/model/response"
 	"stock_backend/repository"
 	"time"
 
-	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt"
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 )
 
 type UserService interface {
-	LoginService(request request.LoginRequest, ctx context.Context) (int, any)
-	RegisterService(request request.RegisterRequest, ctx context.Context) (int, any)
-	VerifyUserService(tokenString string, ctx context.Context) (int, any)
-	LogOutService(userId string, ctx context.Context) (int, any)
-	DeleteUserService(userId string, ctx context.Context) (int, any)
-	GetUserProfile(userId string, ctx context.Context) (int, any)
+	Login(request request.LoginRequest, ctx context.Context) (string, error)
+	Register(request request.RegisterRequest, ctx context.Context) error
+	VerifyUser(tokenString string, ctx context.Context) error
+	Logout(userId string, ctx context.Context) error
+	DeleteUser(userId string, ctx context.Context) error
+	GetProfile(userId string, ctx context.Context) (map[string]string, error)
 }
 
 type UserServiceImpl struct {
@@ -38,201 +38,135 @@ func NewUserService(repository repository.UserRepository) UserService {
 	}
 }
 
-func (service *UserServiceImpl) LoginService(request request.LoginRequest, ctx context.Context) (int, any) {
+func (service *UserServiceImpl) Login(request request.LoginRequest, ctx context.Context) (string, error) {
 	user, err := service.Repository.GetUser(request.Email, ctx)
 	if err != nil {
-		return fiber.StatusNotFound,
-			response.Output{
-				Message: "User not found",
-				Time:    time.Now(),
-				Data:    nil,
+		return "", err
+	}
+
+	if !user.Verified {
+		go func() {
+			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			defer cancel()
+
+			if err := SendVerificationEmail(ctx, *user); err != nil {
+				log.Println("email failed:", err)
 			}
+		}()
+
+		return "", domain_error.ErrNotVerified
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(request.Password)); err != nil {
-		return fiber.StatusUnauthorized,
-			response.Output{
-				Message: "Wrong password",
-				Time:    time.Now(),
-				Data:    nil,
-			}
+		return "", domain_error.ErrWrongPassword
 	}
 
 	userId := user.ID.String()
-	token, err := helper.GenerateJWT(userId, user.Email, user.Role)
-	if err != nil {
-		return fiber.StatusInternalServerError,
-			response.Output{
-				Message: "Internal server error",
-				Time:    time.Now(),
-				Data:    nil,
-			}
-	}
 
-	return fiber.StatusOK,
-		response.Output{
-			Message: "Login Success",
-			Time:    time.Now(),
-			Data: map[string]string{
-				"token": token,
-			},
-		}
+	return helper.GenerateJWT(userId, user.Email, user.Role)
 }
 
-func (service *UserServiceImpl) RegisterService(request request.RegisterRequest, ctx context.Context) (int, any) {
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(request.Password), bcrypt.DefaultCost)
+func (service *UserServiceImpl) Register(request request.RegisterRequest, ctx context.Context) error {
+	hash, err := bcrypt.GenerateFromPassword(
+		[]byte(request.Password),
+		bcrypt.DefaultCost,
+	)
+
 	if err != nil {
-		return fiber.StatusInternalServerError,
-			response.Output{
-				Message: "Internal server error",
-				Time:    time.Now(),
-				Data:    nil,
-			}
+		return domain_error.ErrInternal
 	}
 
 	user := entity.User{
 		ID:       uuid.New(),
 		Username: request.Username,
 		Email:    request.Email,
-		Password: string(hashedPassword),
+		Password: string(hash),
 	}
 
 	var createdUser *entity.User
 	if createdUser, err = service.Repository.Create(user, ctx); err != nil {
-		return fiber.StatusInternalServerError,
-			response.Output{
-				Message: "Error registering user",
-				Time:    time.Now(),
-				Data:    nil,
-			}
+		return err
 	}
 
 	go func() {
-		SendVerificationEmail(*createdUser)
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+
+		if err := SendVerificationEmail(ctx, *createdUser); err != nil {
+			log.Println("email failed:", err)
+		}
 	}()
 
-	return fiber.StatusOK,
-		response.Output{
-			Message: "Register Success",
-			Time:    time.Now(),
-			Data:    nil,
-		}
+	return nil
 }
 
-func (service *UserServiceImpl) VerifyUserService(tokenString string, ctx context.Context) (int, any) {
+func (service *UserServiceImpl) VerifyUser(tokenString string, ctx context.Context) error {
 	token, err := helper.ValidateJWT(tokenString)
 	if err != nil {
-		return fiber.StatusBadRequest,
-			response.Output{
-				Message: "Invalid or expired token",
-				Time:    time.Now(),
-				Data:    nil,
-			}
+		return domain_error.ErrInvalidToken
 	}
 
 	claims, ok := token.Claims.(jwt.MapClaims)
 	if !ok || !token.Valid {
-		return fiber.StatusBadRequest,
-			response.Output{
-				Message: "Invalid token claims",
-				Time:    time.Now(),
-				Data:    nil,
-			}
+		return domain_error.ErrInvalidTokenClaims
 	}
 
 	userId := claims["sub"].(string)
 
 	if err := service.Repository.VerifyUser(userId, ctx); err != nil {
-		return fiber.StatusInternalServerError,
-			response.Output{
-				Message: "Internal server error",
-				Time:    time.Now(),
-				Data:    nil,
-			}
+		return err
 	}
 
-	return fiber.StatusOK,
-		response.Output{
-			Message: "Account verified successfully",
-			Time:    time.Now(),
-			Data:    nil,
-		}
+	return nil
 }
 
-func (service *UserServiceImpl) LogOutService(userId string, ctx context.Context) (int, any) {
+func (service *UserServiceImpl) Logout(userId string, ctx context.Context) error {
 	if err := service.Repository.Logout(userId, ctx); err != nil {
-		return fiber.StatusInternalServerError, response.Output{
-			Message: "Internal server error",
-			Time:    time.Now(),
-			Data:    nil,
-		}
+		return err
 	}
 
-	return fiber.StatusOK, response.Output{
-		Message: "Logout Success",
-		Time:    time.Now(),
-		Data:    nil,
-	}
+	return nil
 }
 
-func (service *UserServiceImpl) DeleteUserService(userId string, ctx context.Context) (int, any) {
+func (service *UserServiceImpl) DeleteUser(userId string, ctx context.Context) error {
 	if err := service.Repository.DeleteUser(userId, ctx); err != nil {
-		return fiber.StatusInternalServerError, response.Output{
-			Message: "Internal server error",
-			Time:    time.Now(),
-			Data:    nil,
-		}
+		return err
 	}
 
-	return fiber.StatusOK, response.Output{
-		Message: "User deleted successfully",
-		Time:    time.Now(),
-		Data:    nil,
-	}
+	return nil
 }
 
-func (service *UserServiceImpl) GetUserProfile(userId string, ctx context.Context) (int, any) {
+func (service *UserServiceImpl) GetProfile(userId string, ctx context.Context) (map[string]string, error) {
 	user, err := service.Repository.GetUserByID(userId, ctx)
+
 	if err != nil {
-		return fiber.StatusNotFound,
-			response.Output{
-				Message: "User not found",
-				Time:    time.Now(),
-				Data:    nil,
-			}
+		return nil, err
 	}
 
-	return fiber.StatusOK,
-		response.Output{
-			Message: "User profile retrieved successfully",
-			Time:    time.Now(),
-			Data: map[string]string{
-				"username": user.Username,
-				"email":    user.Email,
-			},
-		}
+	return map[string]string{
+		"username": user.Username,
+		"email":    user.Email,
+	}, nil
 }
 
-func SendVerificationEmail(user entity.User) {
+func SendVerificationEmail(ctx context.Context, user entity.User) error {
 	smtpUser := os.Getenv("SMTP_EMAIL")
 	smtpPass := os.Getenv("SMTP_PASSWORD")
 	smtpHost := os.Getenv("SMTP_HOST")
 	smtpPort := os.Getenv("SMTP_PORT")
+	appHost := os.Getenv("APP_HOST")
 
-	auth := smtp.PlainAuth(
-		"",
-		smtpUser,
-		smtpPass,
-		smtpHost,
-	)
+	if smtpUser == "" || smtpPass == "" || smtpHost == "" || smtpPort == "" || appHost == "" {
+		return errors.New("missing smtp configuration")
+	}
+
+	auth := smtp.PlainAuth("", smtpUser, smtpPass, smtpHost)
 
 	token, err := helper.GenerateJWT(user.ID.String(), user.Email, user.Role)
 	if err != nil {
-		log.Println("Failed to generate verification token:", err)
-		return
+		return err
 	}
 
-	appHost := os.Getenv("APP_HOST")
 	verifyURL := fmt.Sprintf(
 		"%s/api/user/verify?token=%s",
 		appHost,
@@ -241,7 +175,6 @@ func SendVerificationEmail(user entity.User) {
 
 	subject := "Verify your Stock App account"
 
-	// HTML email body with button
 	htmlBody := fmt.Sprintf(`
 	<!DOCTYPE html>
 	<html>
@@ -283,26 +216,31 @@ func SendVerificationEmail(user entity.User) {
 	</html>
 	`, verifyURL)
 
-	// Email headers (VERY IMPORTANT)
 	msg := []byte(
 		"From: " + smtpUser + "\r\n" +
 			"To: " + user.Email + "\r\n" +
 			"Subject: " + subject + "\r\n" +
 			"MIME-Version: 1.0\r\n" +
-			"Content-Type: text/html; charset=\"UTF-8\"\r\n" +
-			"\r\n" +
+			"Content-Type: text/html; charset=UTF-8\r\n\r\n" +
 			htmlBody,
 	)
 
-	err = smtp.SendMail(
-		smtpHost+":"+smtpPort,
-		auth,
-		smtpUser,
-		[]string{user.Email},
-		msg,
-	)
+	// respect context cancellation
+	done := make(chan error, 1)
+	go func() {
+		done <- smtp.SendMail(
+			smtpHost+":"+smtpPort,
+			auth,
+			smtpUser,
+			[]string{user.Email},
+			msg,
+		)
+	}()
 
-	if err != nil {
-		log.Println("Failed to send verification email:", err)
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case err := <-done:
+		return err
 	}
 }

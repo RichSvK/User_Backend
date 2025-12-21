@@ -32,11 +32,11 @@ func NewUserRepository(db *sql.DB, redis_db *redis.Client) UserRepository {
 }
 
 func (repository *UserRepositoryImpl) GetUser(email string, ctx context.Context) (*entity.User, error) {
-	query := "SELECT id, username, email, password, r.rolename FROM users u JOIN roles r ON u.roleid = r.roleid WHERE email = $1"
+	query := "SELECT id, username, email, password, r.rolename, verified FROM users u JOIN roles r ON u.roleid = r.roleid WHERE email = $1"
 	row := repository.DB.QueryRowContext(ctx, query, email)
 
 	var user entity.User
-	err := row.Scan(&user.ID, &user.Username, &user.Email, &user.Password, &user.Role)
+	err := row.Scan(&user.ID, &user.Username, &user.Email, &user.Password, &user.Role, &user.Verified)
 	if err == sql.ErrNoRows {
 		return nil, domain_error.ErrUserNotFound
 	}
@@ -55,47 +55,12 @@ func (repository *UserRepositoryImpl) Create(user entity.User, ctx context.Conte
 	}
 	defer tx.Rollback()
 
-	var resultUser entity.User
-
-	// Try to update if user exists and NOT verified
-	updateQuery := `
-		UPDATE users
-		SET username = $1,
-		    password = $2
-		WHERE email = $3 AND verified = false
-		RETURNING id, username, email;
-	`
-
-	err = tx.QueryRowContext(
-		ctx,
-		updateQuery,
-		user.Username,
-		user.Password,
-		user.Email,
-	).Scan(
-		&resultUser.ID,
-		&resultUser.Username,
-		&resultUser.Email,
-	)
-
-	// Update succeeded, row returned
-	if err == nil {
-		err = tx.Commit()
-		return &resultUser, err
-	}
-
-	// If error is not "no rows", return it
-	if err != sql.ErrNoRows {
-		return nil, domain_error.ErrInternal
-	}
-
-	// Otherwise insert new user
 	insertQuery := `
 		INSERT INTO users (id, username, email, password)
 		VALUES ($1, $2, $3, $4)
-		RETURNING id, username, email;
+		RETURNING id, username, email, verified;
 	`
-
+	var createdUser entity.User
 	err = tx.QueryRowContext(
 		ctx,
 		insertQuery,
@@ -103,17 +68,13 @@ func (repository *UserRepositoryImpl) Create(user entity.User, ctx context.Conte
 		user.Username,
 		user.Email,
 		user.Password,
-	).Scan(
-		&resultUser.ID,
-		&resultUser.Username,
-		&resultUser.Email,
-	)
+	).Scan(&createdUser.ID, &createdUser.Username, &createdUser.Email, &createdUser.Verified)
 
 	if err != nil {
 		return nil, domain_error.ErrInternal
 	}
 
-	return &resultUser, tx.Commit()
+	return &createdUser, tx.Commit()
 }
 
 func (repository *UserRepositoryImpl) VerifyUser(userId string, ctx context.Context) error {
