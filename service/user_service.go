@@ -12,7 +12,6 @@ import (
 	domain_error "stock_backend/model/error"
 	"stock_backend/model/request"
 	"stock_backend/repository"
-	"time"
 
 	"github.com/golang-jwt/jwt"
 	"github.com/google/uuid"
@@ -44,18 +43,17 @@ func (service *UserServiceImpl) Login(request request.LoginRequest, ctx context.
 		return "", err
 	}
 
-	if !user.Verified {
-		go func() {
-			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-			defer cancel()
+	// Run this code if email verification is required
+	// if !user.Verified {
+	// 	go func(user entity.User) {
+	// 		bgCtx := context.Background()
+	// 		if err := SendVerificationEmail(bgCtx, user); err != nil {
+	// 			log.Println("email failed:", err)
+	// 		}
+	// 	}(*user)
 
-			if err := SendVerificationEmail(ctx, *user); err != nil {
-				log.Println("email failed:", err)
-			}
-		}()
-
-		return "", domain_error.ErrNotVerified
-	}
+	// 	return "", domain_error.ErrNotVerified
+	// }
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(request.Password)); err != nil {
 		return "", domain_error.ErrWrongPassword
@@ -83,19 +81,20 @@ func (service *UserServiceImpl) Register(request request.RegisterRequest, ctx co
 		Password: string(hash),
 	}
 
-	var createdUser *entity.User
-	if createdUser, err = service.Repository.Create(user, ctx); err != nil {
+	// var createdUser *entity.User
+	if _, err = service.Repository.Create(user, ctx); err != nil {
 		return err
 	}
 
-	go func() {
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-		defer cancel()
+	// Run this code if email verification is required and SMTP server is configured
+	// go func() {
+	// 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	// 	defer cancel()
 
-		if err := SendVerificationEmail(ctx, *createdUser); err != nil {
-			log.Println("email failed:", err)
-		}
-	}()
+	// 	if err := SendVerificationEmail(ctx, *createdUser); err != nil {
+	// 		log.Println("email failed:", err)
+	// 	}
+	// }()
 
 	return nil
 }
@@ -226,6 +225,7 @@ func SendVerificationEmail(ctx context.Context, user entity.User) error {
 	)
 
 	// respect context cancellation
+	log.Println("TEST")
 	done := make(chan error, 1)
 	go func() {
 		done <- smtp.SendMail(
@@ -239,8 +239,10 @@ func SendVerificationEmail(ctx context.Context, user entity.User) error {
 
 	select {
 	case <-ctx.Done():
+		log.Println("Errorrr")
 		return ctx.Err()
 	case err := <-done:
+		log.Println("Finished Email Send")
 		return err
 	}
 }

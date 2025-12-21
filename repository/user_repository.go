@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log"
 	"stock_backend/model/entity"
 	domain_error "stock_backend/model/error"
 
@@ -53,7 +54,12 @@ func (repository *UserRepositoryImpl) Create(user entity.User, ctx context.Conte
 	if err != nil {
 		return nil, err
 	}
-	defer tx.Rollback()
+
+	defer func() {
+		if err := tx.Rollback(); err != nil && err != sql.ErrTxDone {
+			log.Println("transaction rollback error:", err)
+		}
+	}()
 
 	insertQuery := `
 		INSERT INTO users (id, username, email, password)
