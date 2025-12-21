@@ -16,6 +16,7 @@ import (
 type UserHandler interface {
 	Login(ctx *fiber.Ctx) error
 	Register(c *fiber.Ctx) error
+	VerifyUser(c *fiber.Ctx) error
 	Logout(c *fiber.Ctx) error
 	DeleteUser(c *fiber.Ctx) error
 	GetUserInfo(c *fiber.Ctx) error
@@ -104,6 +105,24 @@ func (handler *UserHandlerImpl) Register(c *fiber.Ctx) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 	status, result := handler.UserService.RegisterService(registerRequest, ctx)
+
+	return c.Status(status).JSON(result)
+}
+
+func (handler *UserHandlerImpl) VerifyUser(c *fiber.Ctx) error {
+	token := c.Query("token")
+	if token == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(response.Output{
+			Message: "Token is required",
+			Time:    time.Now(),
+			Data:    nil,
+		})
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	status, result := handler.UserService.VerifyUserService(token, ctx)
 
 	return c.Status(status).JSON(result)
 }

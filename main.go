@@ -55,13 +55,13 @@ func main() {
 	// 	log.Fatal(err.Error())
 	// }
 
-	// redisDb, err := database.ConnectRedis()
-	// if err != nil {
-	// 	log.Fatal(err.Error())
-	// }
+	redisDb, err := database.ConnectRedis()
+	if err != nil {
+		log.Println(err.Error())
+	}
 
 	// Routes Grouping
-	router.RegisterUserRoutes(app, db, nil)
+	router.RegisterUserRoutes(app, db, redisDb)
 	router.RegisterWatchlistRoutes(app, db)
 	// router.RegisterFavoriteRoutes(app, db_favorite, redisDb)
 

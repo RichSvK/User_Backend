@@ -20,6 +20,7 @@ func RegisterUserRoutes(router fiber.Router, db *sql.DB, redis_db *redis.Client)
 	userRouting := router.Group("/api/user")
 	userRouting.Post("/login", userHandler.Login)
 	userRouting.Post("/register", userHandler.Register)
+	userRouting.Get("/verify", userHandler.VerifyUser)
 
 	authRouting := router.Group("/api/auth/user")
 	authRouting.Get("/profile", userHandler.GetUserInfo)

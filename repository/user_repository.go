@@ -3,15 +3,17 @@ package repository
 import (
 	"context"
 	"database/sql"
-	"errors"
+	"fmt"
 	"stock_backend/model/entity"
+	domain_error "stock_backend/model/error"
 
 	"github.com/redis/go-redis/v9"
 )
 
 type UserRepository interface {
 	GetUser(email string, ctx context.Context) (*entity.User, error)
-	Create(user entity.User, ctx context.Context) error
+	Create(user entity.User, ctx context.Context) (*entity.User, error)
+	VerifyUser(userId string, ctx context.Context) error
 	Logout(userId string, ctx context.Context) error
 	DeleteUser(userId string, ctx context.Context) error
 	GetUserByID(userId string, ctx context.Context) (*entity.User, error)
@@ -35,38 +37,134 @@ func (repository *UserRepositoryImpl) GetUser(email string, ctx context.Context)
 
 	var user entity.User
 	err := row.Scan(&user.ID, &user.Username, &user.Email, &user.Password, &user.Role)
+	if err == sql.ErrNoRows {
+		return nil, domain_error.ErrUserNotFound
+	}
+
 	if err != nil {
-		return nil, err
+		return nil, domain_error.ErrInternal
 	}
 
 	return &user, nil
 }
 
-func (repository *UserRepositoryImpl) Create(user entity.User, ctx context.Context) error {
-	query := "INSERT INTO users (id, username, email, password) VALUES ($1, $2, $3, $4)"
-	_, err := repository.DB.ExecContext(ctx, query, user.ID.String(), user.Username, user.Email, user.Password)
-	return err
+func (repository *UserRepositoryImpl) Create(user entity.User, ctx context.Context) (*entity.User, error) {
+	tx, err := repository.DB.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	var resultUser entity.User
+
+	// Try to update if user exists and NOT verified
+	updateQuery := `
+		UPDATE users
+		SET username = $1,
+		    password = $2
+		WHERE email = $3 AND verified = false
+		RETURNING id, username, email;
+	`
+
+	err = tx.QueryRowContext(
+		ctx,
+		updateQuery,
+		user.Username,
+		user.Password,
+		user.Email,
+	).Scan(
+		&resultUser.ID,
+		&resultUser.Username,
+		&resultUser.Email,
+	)
+
+	// Update succeeded, row returned
+	if err == nil {
+		err = tx.Commit()
+		return &resultUser, err
+	}
+
+	// If error is not "no rows", return it
+	if err != sql.ErrNoRows {
+		return nil, domain_error.ErrInternal
+	}
+
+	// Otherwise insert new user
+	insertQuery := `
+		INSERT INTO users (id, username, email, password)
+		VALUES ($1, $2, $3, $4)
+		RETURNING id, username, email;
+	`
+
+	err = tx.QueryRowContext(
+		ctx,
+		insertQuery,
+		user.ID.String(),
+		user.Username,
+		user.Email,
+		user.Password,
+	).Scan(
+		&resultUser.ID,
+		&resultUser.Username,
+		&resultUser.Email,
+	)
+
+	if err != nil {
+		return nil, domain_error.ErrInternal
+	}
+
+	return &resultUser, tx.Commit()
+}
+
+func (repository *UserRepositoryImpl) VerifyUser(userId string, ctx context.Context) error {
+	query := "UPDATE users SET verified = TRUE WHERE id = $1"
+	res, err := repository.DB.ExecContext(ctx, query, userId)
+	if err != nil {
+		return domain_error.ErrInternal
+	}
+
+	rows, _ := res.RowsAffected()
+	if rows == 0 {
+		return domain_error.ErrUserNotFound
+	}
+
+	return nil
 }
 
 func (repository *UserRepositoryImpl) Logout(userId string, ctx context.Context) error {
 	// Remove user favorites from Redis cache
-	// return repository.RedisDB.Del(ctx, fmt.Sprintf("favorites:%s", userId)).Err()
+	if repository.RedisDB != nil {
+		if err := repository.RedisDB.Del(
+			ctx,
+			fmt.Sprintf("favorites:%s", userId),
+		).Err(); err != nil {
+			return domain_error.ErrInternal
+		}
+	}
+
 	return nil
 }
 
 func (repository *UserRepositoryImpl) DeleteUser(userId string, ctx context.Context) error {
-	query := "DELETE FROM users WHERE id = $1 AND roleid = 1"
+	query := "DELETE FROM users WHERE id = $1"
 	res, err := repository.DB.ExecContext(ctx, query, userId)
 	if err != nil {
-		return err
+		return domain_error.ErrInternal
 	}
 
-	rowsAffected, _ := res.RowsAffected()
+	rowsAffected, err := res.RowsAffected()
+	if err != nil {
+		return domain_error.ErrInternal
+	}
+
 	if rowsAffected == 0 {
-		return errors.New("user not found")
+		return domain_error.ErrUserNotFound
 	}
 
-	// return repository.RedisDB.Del(ctx, fmt.Sprintf("favorites:%s", userId)).Err()
+	// Remove user favorites from Redis cache
+	if repository.RedisDB != nil {
+		_ = repository.RedisDB.Del(ctx, fmt.Sprintf("favorites:%s", userId)).Err()
+	}
 	return nil
 }
 
@@ -76,8 +174,13 @@ func (repository *UserRepositoryImpl) GetUserByID(userId string, ctx context.Con
 
 	var user entity.User
 	err := row.Scan(&user.ID, &user.Username, &user.Email)
+
+	if err == sql.ErrNoRows {
+		return nil, domain_error.ErrUserNotFound
+	}
+
 	if err != nil {
-		return nil, err
+		return nil, domain_error.ErrInternal
 	}
 
 	return &user, nil
