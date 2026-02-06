@@ -11,6 +11,7 @@ import (
 	"stock_backend/model/entity"
 	domain_error "stock_backend/model/error"
 	"stock_backend/model/request"
+	"stock_backend/model/response"
 	"stock_backend/repository"
 
 	"github.com/golang-jwt/jwt"
@@ -19,12 +20,12 @@ import (
 )
 
 type UserService interface {
-	Login(request request.LoginRequest, ctx context.Context) (string, error)
-	Register(request request.RegisterRequest, ctx context.Context) error
-	VerifyUser(tokenString string, ctx context.Context) error
-	Logout(userId string, ctx context.Context) error
-	DeleteUser(userId string, ctx context.Context) error
-	GetProfile(userId string, ctx context.Context) (map[string]string, error)
+	Login(request request.LoginRequest, ctx context.Context) (*response.LoginResponse, error)
+	Register(request request.RegisterRequest, ctx context.Context) (*response.RegisterResponse, error)
+	VerifyUser(tokenString string, ctx context.Context) (*response.VerifyResponse, error)
+	Logout(userId string, ctx context.Context) (*response.LogoutResponse, error)
+	DeleteUser(userId string, ctx context.Context) (*response.DeleteUserResponse, error)
+	GetProfile(userId string, ctx context.Context) (*response.UserProfileResponse, error)
 }
 
 type UserServiceImpl struct {
@@ -37,10 +38,10 @@ func NewUserService(repository repository.UserRepository) UserService {
 	}
 }
 
-func (service *UserServiceImpl) Login(request request.LoginRequest, ctx context.Context) (string, error) {
+func (service *UserServiceImpl) Login(request request.LoginRequest, ctx context.Context) (*response.LoginResponse, error) {
 	user, err := service.Repository.GetUser(request.Email, ctx)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	// Run this code if email verification is required
@@ -56,22 +57,32 @@ func (service *UserServiceImpl) Login(request request.LoginRequest, ctx context.
 	// }
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(request.Password)); err != nil {
-		return "", domain_error.ErrWrongPassword
+		return nil, domain_error.ErrWrongPassword
 	}
 
 	userId := user.ID.String()
 
-	return helper.GenerateJWT(userId, user.Email, user.Role)
+	token, err := helper.GenerateJWT(userId, user.Email, user.Role)
+	if err != nil {
+		return nil, domain_error.ErrInternal
+	}
+
+	response := &response.LoginResponse{
+		Message: "Login successful",
+		Token:   token,
+	}
+
+	return response, nil
 }
 
-func (service *UserServiceImpl) Register(request request.RegisterRequest, ctx context.Context) error {
+func (service *UserServiceImpl) Register(request request.RegisterRequest, ctx context.Context) (*response.RegisterResponse, error) {
 	hash, err := bcrypt.GenerateFromPassword(
 		[]byte(request.Password),
 		bcrypt.DefaultCost,
 	)
 
 	if err != nil {
-		return domain_error.ErrInternal
+		return nil, domain_error.ErrInternal
 	}
 
 	user := entity.User{
@@ -83,7 +94,7 @@ func (service *UserServiceImpl) Register(request request.RegisterRequest, ctx co
 
 	// var createdUser *entity.User
 	if _, err = service.Repository.Create(user, ctx); err != nil {
-		return err
+		return nil, err
 	}
 
 	// Run this code if email verification is required and SMTP server is configured
@@ -96,56 +107,73 @@ func (service *UserServiceImpl) Register(request request.RegisterRequest, ctx co
 	// 	}
 	// }()
 
-	return nil
+	response := &response.RegisterResponse{
+		Message: "Registration successful",
+	}
+
+	return response, nil
 }
 
-func (service *UserServiceImpl) VerifyUser(tokenString string, ctx context.Context) error {
+func (service *UserServiceImpl) VerifyUser(tokenString string, ctx context.Context) (*response.VerifyResponse, error) {
 	token, err := helper.ValidateJWT(tokenString)
 	if err != nil {
-		return domain_error.ErrInvalidToken
+		return nil, domain_error.ErrInvalidToken
 	}
 
 	claims, ok := token.Claims.(jwt.MapClaims)
 	if !ok || !token.Valid {
-		return domain_error.ErrInvalidTokenClaims
+		return nil, domain_error.ErrInvalidTokenClaims
 	}
 
 	userId := claims["sub"].(string)
 
 	if err := service.Repository.VerifyUser(userId, ctx); err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	response := &response.VerifyResponse{
+		Message: "User verified successfully",
+	}
+
+	return response, nil
 }
 
-func (service *UserServiceImpl) Logout(userId string, ctx context.Context) error {
+func (service *UserServiceImpl) Logout(userId string, ctx context.Context) (*response.LogoutResponse, error) {
 	if err := service.Repository.Logout(userId, ctx); err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	response := &response.LogoutResponse{
+		Message: "Logout successful",
+	}
+
+	return response, nil
 }
 
-func (service *UserServiceImpl) DeleteUser(userId string, ctx context.Context) error {
+func (service *UserServiceImpl) DeleteUser(userId string, ctx context.Context) (*response.DeleteUserResponse, error) {
 	if err := service.Repository.DeleteUser(userId, ctx); err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	response := &response.DeleteUserResponse{
+		Message: "User deleted successfully",
+	}
+
+	return response, nil
 }
 
-func (service *UserServiceImpl) GetProfile(userId string, ctx context.Context) (map[string]string, error) {
+func (service *UserServiceImpl) GetProfile(userId string, ctx context.Context) (*response.UserProfileResponse, error) {
 	user, err := service.Repository.GetUserByID(userId, ctx)
 
 	if err != nil {
 		return nil, err
 	}
 
-	return map[string]string{
-		"username": user.Username,
-		"email":    user.Email,
-	}, nil
+	response := &response.UserProfileResponse{
+		Username: user.Username,
+		Email:    user.Email,
+	}
+	return response, nil
 }
 
 func SendVerificationEmail(ctx context.Context, user entity.User) error {

@@ -2,29 +2,29 @@ package repository
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"fmt"
+	"log"
 	"stock_backend/model/entity"
 	"time"
 
 	"github.com/redis/go-redis/v9"
-	"go.mongodb.org/mongo-driver/v2/bson"
-	"go.mongodb.org/mongo-driver/v2/mongo"
 )
 
 type FavoriteRepository interface {
 	Create(favorite *entity.Favorite, ctx context.Context) error
-	GetFavorites(userId string, ctx context.Context) (*entity.Favorite, error)
-	AddFavoriteCache(key string, favorite *entity.Favorite, ctx context.Context) error
-	RemoveFavorite(userId string, ctx context.Context) error
+	GetFavorites(userId string, ctx context.Context) ([]string, error)
+	AddFavoriteCache(key string, favorite []string, ctx context.Context) error
+	RemoveFavorite(userId string, underwriterCode string, ctx context.Context) error
 }
 
 type FavoriteRepositoryImpl struct {
-	DB      *mongo.Client
+	DB      *sql.DB
 	RedisDB *redis.Client
 }
 
-func NewFavoriteRepository(db *mongo.Client, redisDb *redis.Client) FavoriteRepository {
+func NewFavoriteRepository(db *sql.DB, redisDb *redis.Client) FavoriteRepository {
 	return &FavoriteRepositoryImpl{
 		DB:      db,
 		RedisDB: redisDb,
@@ -32,96 +32,85 @@ func NewFavoriteRepository(db *mongo.Client, redisDb *redis.Client) FavoriteRepo
 }
 
 func (repository *FavoriteRepositoryImpl) Create(favorite *entity.Favorite, ctx context.Context) error {
-	collection := repository.DB.Database("test").Collection("favorites")
-	collection.FindOne(ctx, bson.M{"userId": favorite.UserID})
+	query := `INSERT INTO favorites (userId, underwriterId) VALUES ($1, $2)`
 
-	filter := bson.M{"userId": favorite.UserID}
+	if _, err := repository.DB.ExecContext(ctx, query,
+		favorite.UserID,
+		favorite.UnderwriterID,
+	); err != nil {
+		return err
+	}
 
-	// Check if the user favorite already exists
-	err := collection.FindOne(ctx, filter).Err()
+	// Invalidate the user's favorites cache so the next read gets fresh data
 	cacheKey := fmt.Sprintf("favorites:%s", favorite.UserID)
-	if err != nil {
-		if err == mongo.ErrNoDocuments {
-			// Insert New Document
-			if _, err := collection.InsertOne(ctx, favorite); err != nil {
-				return err
-			}
-
-			// Add to cache
-			_ = repository.AddFavoriteCache(cacheKey, favorite, ctx)
-		}
-
-		return err
+	if err := repository.RedisDB.Del(ctx, cacheKey).Err(); err != nil {
+		log.Println("Failed to invalidate cache:", err.Error())
 	}
-
-	// Update document if user favorite found
-	update := bson.M{
-		"$addToSet": bson.M{"underwriters": bson.M{"$each": favorite.Underwriters}},
-		"$set":      bson.M{"updated_at": time.Now()},
-	}
-
-	if _, err = collection.UpdateOne(ctx, filter, update); err != nil {
-		return err
-	}
-
-	var updatedFavorite entity.Favorite
-	err = collection.FindOne(ctx, filter).Decode(&updatedFavorite)
-	if err == nil {
-		_ = repository.AddFavoriteCache(cacheKey, &updatedFavorite, ctx)
-	}
-	return err
+	return nil
 }
 
-func (repository *FavoriteRepositoryImpl) GetFavorites(userId string, ctx context.Context) (*entity.Favorite, error) {
+func (repository *FavoriteRepositoryImpl) GetFavorites(userId string, ctx context.Context) ([]string, error) {
 	cacheKey := fmt.Sprintf("favorites:%s", userId)
 	cachedData, err := repository.RedisDB.Get(ctx, cacheKey).Result()
 	if err == nil {
-		var favorite entity.Favorite
+		var favorite []string
 		if err := json.Unmarshal([]byte(cachedData), &favorite); err == nil {
-			return &favorite, nil
+			return favorite, nil
 		}
 	} else if err != redis.Nil {
 		return nil, err
 	}
 
 	// If the data is not in cache
-	collection := repository.DB.Database("test").Collection("favorites")
+	rows, err := repository.DB.QueryContext(ctx, `SELECT underwriter_id FROM favorites WHERE user_id = $1`, userId)
 
-	var favorite entity.Favorite
-	err = collection.FindOne(ctx, bson.M{"userId": userId}).Decode(&favorite)
 	if err != nil {
-		if err == mongo.ErrNoDocuments {
-			return nil, err
-		}
 		return nil, err
 	}
 
-	_ = repository.AddFavoriteCache(cacheKey, &favorite, ctx)
+	defer func() {
+		_ = rows.Close()
+	}()
 
-	return &favorite, nil
+	var favorites []entity.Favorite
+	for rows.Next() {
+		var fav entity.Favorite
+		if err := rows.Scan(&fav.UnderwriterID); err != nil {
+			return nil, err
+		}
+		favorites = append(favorites, fav)
+	}
+
+	listFavorite := []string{}
+	for _, fav := range favorites {
+		listFavorite = append(listFavorite, fav.UnderwriterID)
+	}
+
+	_ = repository.AddFavoriteCache(cacheKey, listFavorite, ctx)
+
+	return listFavorite, nil
 }
 
-func (repository *FavoriteRepositoryImpl) AddFavoriteCache(key string, favorite *entity.Favorite, ctx context.Context) error {
-	if jsonData, err := json.Marshal(favorite); err == nil {
-		_ = repository.RedisDB.Set(ctx, key, jsonData, 1*time.Minute).Err()
+func (repository *FavoriteRepositoryImpl) AddFavoriteCache(key string, favorites []string, ctx context.Context) error {
+	if jsonData, err := json.Marshal(favorites); err == nil {
+		_ = repository.RedisDB.Set(ctx, key, jsonData, 5*time.Minute).Err()
 	}
 	return nil
 }
 
-func (repository *FavoriteRepositoryImpl) RemoveFavorite(userId string, ctx context.Context) error {
-	collection := repository.DB.Database("test").Collection("favorites")
-	filter := bson.M{"userId": userId}
-
+func (repository *FavoriteRepositoryImpl) RemoveFavorite(userId string, underwriterCode string, ctx context.Context) error {
 	// Remove the cache entry
 	cacheKey := fmt.Sprintf("favorites:%s", userId)
 	if err := repository.RedisDB.Del(ctx, cacheKey).Err(); err != nil {
 		return err
 	}
 
-	// Remove the document from MongoDB
-	if _, err := collection.DeleteOne(ctx, filter); err != nil {
-		return err
-	}
+	// Delete in database
+	_, err := repository.DB.ExecContext(ctx,
+		"DELETE FROM favorites WHERE user_id = $1 AND underwriter_id = $2",
+		userId,
+		underwriterCode,
+	)
 
-	return nil
+	return err
 }

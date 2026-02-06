@@ -2,20 +2,16 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"stock_backend/model/entity"
-	"stock_backend/model/request"
 	"stock_backend/model/response"
 	"stock_backend/repository"
-	"time"
-
-	"github.com/gofiber/fiber/v2"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type FavoriteService interface {
-	CreateFavorite(userId string, request request.FavoriteUnderwriterRequest, ctx context.Context) (int, any)
-	GetFavorites(userId string, ctx context.Context) (int, any)
-	RemoveFavorite(userId string, ctx context.Context) (int, any)
+	CreateFavorite(userId string, underwriterId string, ctx context.Context) (*response.AddFavorite, error)
+	GetFavorites(userId string, ctx context.Context) (*response.GetFavorites, error)
+	RemoveFavorite(userId string, underwriterCode string, ctx context.Context) (*response.RemoveFavorite, error)
 }
 
 type FavoriteServiceImpl struct {
@@ -28,66 +24,44 @@ func NewFavoriteService(repository repository.FavoriteRepository) FavoriteServic
 	}
 }
 
-func (service *FavoriteServiceImpl) CreateFavorite(userId string, request request.FavoriteUnderwriterRequest, ctx context.Context) (int, any) {
+func (service *FavoriteServiceImpl) CreateFavorite(userId string, underwriterId string, ctx context.Context) (*response.AddFavorite, error) {
 	favorite := &entity.Favorite{
-		ID:           primitive.NewObjectID(),
-		UserID:       userId,
-		Underwriters: request.Underwriter,
-		CreatedAt:    time.Now(),
-		UpdatedAt:    time.Now(),
+		UserID:        userId,
+		UnderwriterID: underwriterId,
 	}
 
-	err := service.Repository.Create(favorite, ctx)
-	if err != nil {
-		result := response.Output{
-			Message: "Add favorite failed",
-			Time:    time.Now(),
-			Data:    nil,
-		}
-		return fiber.StatusBadRequest, result
+	if err := service.Repository.Create(favorite, ctx); err != nil {
+		return nil, err
 	}
 
-	result := response.Output{
-		Message: "Add favorite success",
-		Time:    time.Now(),
-		Data:    nil,
+	response := &response.AddFavorite{
+		Message: fmt.Sprintf("Add %s to favorite success", underwriterId),
 	}
-	return fiber.StatusOK, result
+
+	return response, nil
 }
 
-func (service *FavoriteServiceImpl) GetFavorites(userId string, ctx context.Context) (int, any) {
+func (service *FavoriteServiceImpl) GetFavorites(userId string, ctx context.Context) (*response.GetFavorites, error) {
 	favoriteData, err := service.Repository.GetFavorites(userId, ctx)
 	if err != nil {
-		result := response.Output{
-			Message: "Internal server error",
-			Time:    time.Now(),
-			Data:    nil,
-		}
-		return fiber.StatusBadRequest, result
+		return nil, err
 	}
 
-	result := response.Output{
+	response := &response.GetFavorites{
 		Message: "Favorite Found",
-		Time:    time.Now(),
 		Data:    favoriteData,
 	}
-	return fiber.StatusOK, result
+	return response, nil
 }
 
-func (service *FavoriteServiceImpl) RemoveFavorite(userId string, ctx context.Context) (int, any) {
-	if err := service.Repository.RemoveFavorite(userId, ctx); err != nil {
-		result := response.Output{
-			Message: "Internal server error",
-			Time:    time.Now(),
-			Data:    nil,
-		}
-		return fiber.StatusInternalServerError, result
+func (service *FavoriteServiceImpl) RemoveFavorite(userId string, underwriterCode string, ctx context.Context) (*response.RemoveFavorite, error) {
+	if err := service.Repository.RemoveFavorite(userId, underwriterCode, ctx); err != nil {
+		return nil, err
 	}
 
-	result := response.Output{
+	response := &response.RemoveFavorite{
 		Message: "Remove favorite success",
-		Time:    time.Now(),
-		Data:    nil,
 	}
-	return fiber.StatusOK, result
+
+	return response, nil
 }

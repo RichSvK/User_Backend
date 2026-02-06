@@ -63,9 +63,7 @@ func (repository *WatchlistRepositoryImpl) GetWatchlistByUserID(ctx context.Cont
 	}
 
 	defer func() {
-		if cerr := rows.Close(); cerr != nil {
-			log.Printf("failed to close rows: %v\n", cerr)
-		}
+		_ = rows.Close()
 	}()
 
 	var watchlist []string

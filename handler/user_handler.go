@@ -35,6 +35,9 @@ func NewUserHandler(service service.UserService, validator *validator.Validate) 
 }
 
 func (handler *UserHandlerImpl) Login(c *fiber.Ctx) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
 	var loginRequest request.LoginRequest
 	if err := c.BodyParser(&loginRequest); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(response.FailedResponse{
@@ -70,23 +73,20 @@ func (handler *UserHandlerImpl) Login(c *fiber.Ctx) error {
 		})
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-	defer cancel()
-
-	result, err := handler.UserService.Login(loginRequest, ctx)
+	res, err := handler.UserService.Login(loginRequest, ctx)
 	if err != nil {
 		return c.Status(MapErrorToHTTPStatus(err)).JSON(response.FailedResponse{
 			Message: err.Error(),
 		})
 	}
 
-	return c.Status(fiber.StatusOK).JSON(map[string]any{
-		"message": "Login successful",
-		"token":   result,
-	})
+	return c.Status(fiber.StatusOK).JSON(res)
 }
 
 func (handler *UserHandlerImpl) Register(c *fiber.Ctx) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
 	var registerRequest request.RegisterRequest
 	if err := c.BodyParser(&registerRequest); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(response.FailedResponse{
@@ -100,21 +100,20 @@ func (handler *UserHandlerImpl) Register(c *fiber.Ctx) error {
 		})
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-	defer cancel()
-
-	if err := handler.UserService.Register(registerRequest, ctx); err != nil {
+	res, err := handler.UserService.Register(registerRequest, ctx)
+	if err != nil {
 		return c.Status(MapErrorToHTTPStatus(err)).JSON(response.FailedResponse{
 			Message: err.Error(),
 		})
 	}
 
-	return c.Status(fiber.StatusCreated).JSON(response.Output{
-		Message: "User registered successfully",
-	})
+	return c.Status(fiber.StatusCreated).JSON(res)
 }
 
 func (handler *UserHandlerImpl) VerifyUser(c *fiber.Ctx) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
 	token := c.Query("token")
 	if token == "" {
 		return c.Status(fiber.StatusBadRequest).JSON(response.FailedResponse{
@@ -122,18 +121,14 @@ func (handler *UserHandlerImpl) VerifyUser(c *fiber.Ctx) error {
 		})
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-	defer cancel()
-
-	if err := handler.UserService.VerifyUser(token, ctx); err != nil {
+	res, err := handler.UserService.VerifyUser(token, ctx)
+	if err != nil {
 		return c.Status(MapErrorToHTTPStatus(err)).JSON(response.FailedResponse{
 			Message: err.Error(),
 		})
 	}
 
-	return c.Status(fiber.StatusOK).JSON(response.Output{
-		Message: "User verified successfully",
-	})
+	return c.Status(fiber.StatusOK).JSON(res)
 }
 
 func (handler *UserHandlerImpl) Logout(c *fiber.Ctx) error {
@@ -147,15 +142,14 @@ func (handler *UserHandlerImpl) Logout(c *fiber.Ctx) error {
 		})
 	}
 
-	if err := handler.UserService.Logout(userId, ctx); err != nil {
+	res, err := handler.UserService.Logout(userId, ctx)
+	if err != nil {
 		return c.Status(MapErrorToHTTPStatus(err)).JSON(response.FailedResponse{
 			Message: err.Error(),
 		})
 	}
 
-	return c.Status(fiber.StatusOK).JSON(response.Output{
-		Message: "Logout successful",
-	})
+	return c.Status(fiber.StatusOK).JSON(res)
 }
 
 func (handler *UserHandlerImpl) DeleteUser(c *fiber.Ctx) error {
@@ -175,15 +169,14 @@ func (handler *UserHandlerImpl) DeleteUser(c *fiber.Ctx) error {
 		})
 	}
 
-	if err := handler.UserService.DeleteUser(deleteRequest.UserId, ctx); err != nil {
+	res, err := handler.UserService.DeleteUser(deleteRequest.UserId, ctx)
+	if err != nil {
 		return c.Status(MapErrorToHTTPStatus(err)).JSON(response.FailedResponse{
 			Message: err.Error(),
 		})
 	}
 
-	return c.Status(fiber.StatusOK).JSON(response.Output{
-		Message: "User deleted successfully",
-	})
+	return c.Status(fiber.StatusOK).JSON(res)
 }
 
 func (handler *UserHandlerImpl) GetUserInfo(c *fiber.Ctx) error {
@@ -197,12 +190,12 @@ func (handler *UserHandlerImpl) GetUserInfo(c *fiber.Ctx) error {
 		})
 	}
 
-	result, err := handler.UserService.GetProfile(userId, ctx)
+	res, err := handler.UserService.GetProfile(userId, ctx)
 	if err != nil {
 		return c.Status(MapErrorToHTTPStatus(err)).JSON(response.FailedResponse{
 			Message: err.Error(),
 		})
 	}
 
-	return c.Status(fiber.StatusOK).JSON(result)
+	return c.Status(fiber.StatusOK).JSON(res)
 }

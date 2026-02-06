@@ -1,6 +1,10 @@
 package response
 
-type WatchlistResponse struct {
+type RemoveWatchlistResponse struct {
+	Message string `json:"message"`
+}
+
+type AddWatchlistResponse struct {
 	Message string `json:"message"`
 }
 

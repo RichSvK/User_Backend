@@ -47,14 +47,6 @@ func main() {
 		}
 	}()
 
-	// ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	// defer cancel()
-
-	// db_favorite, err := database.ConnectMongoDB(ctx)
-	// if err != nil {
-	// 	log.Fatal(err.Error())
-	// }
-
 	redisDb, err := database.ConnectRedis()
 	if err != nil {
 		log.Println(err.Error())
@@ -63,7 +55,7 @@ func main() {
 	// Routes Grouping
 	router.RegisterUserRoutes(app, db, redisDb)
 	router.RegisterWatchlistRoutes(app, db)
-	// router.RegisterFavoriteRoutes(app, db_favorite, redisDb)
+	router.RegisterFavoriteRoutes(app, db, redisDb)
 
 	// Run the app
 	if err := app.Listen(":8888"); err != nil {

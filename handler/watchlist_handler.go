@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"fmt"
 	"stock_backend/model/request"
 	"stock_backend/model/response"
 	"stock_backend/service"
@@ -30,17 +29,14 @@ func NewWatchlistHandler(service service.WatchlistService, validator *validator.
 
 func (handler *WatchlistHandlerImpl) GetWatchlist(c *fiber.Ctx) error {
 	userId := c.Get("X-User-ID")
-	result, err := handler.Service.GetWatchlist(c.Context(), userId)
+	res, err := handler.Service.GetWatchlist(c.Context(), userId)
 	if err != nil {
 		return c.Status(MapErrorToHTTPStatus(err)).JSON(response.FailedResponse{
 			Message: err.Error(),
 		})
 	}
 
-	return c.Status(fiber.StatusOK).JSON(response.GetWatchlistResponse{
-		Message: "Watchlist retrieved successfully",
-		Stocks:  result,
-	})
+	return c.Status(fiber.StatusOK).JSON(res)
 }
 
 func (handler *WatchlistHandlerImpl) AddWatchlist(c *fiber.Ctx) error {
@@ -58,29 +54,27 @@ func (handler *WatchlistHandlerImpl) AddWatchlist(c *fiber.Ctx) error {
 			Message: "Stock is required",
 		})
 	}
-	
-	if err := handler.Service.AddToWatchlist(c.Context(), userId, req.Stock); err != nil {
+
+	res, err := handler.Service.AddToWatchlist(c.Context(), userId, req.Stock)
+	if err != nil {
 		return c.Status(MapErrorToHTTPStatus(err)).JSON(response.FailedResponse{
 			Message: err.Error(),
 		})
 	}
 
-	return c.Status(fiber.StatusCreated).JSON(response.WatchlistResponse{
-		Message: fmt.Sprintf("Successfully added %s to watchlist", req.Stock),
-	})
+	return c.Status(fiber.StatusCreated).JSON(res)
 }
 
 func (handler *WatchlistHandlerImpl) RemoveWatchlist(c *fiber.Ctx) error {
 	userId := c.Get("X-User-ID")
 	stock := c.Params("stock")
 
-	if err := handler.Service.RemoveFromWatchlist(c.Context(), userId, stock); err != nil {
+	res, err := handler.Service.RemoveFromWatchlist(c.Context(), userId, stock)
+	if err != nil {
 		return c.Status(MapErrorToHTTPStatus(err)).JSON(response.FailedResponse{
 			Message: err.Error(),
 		})
 	}
 
-	return c.Status(fiber.StatusOK).JSON(response.WatchlistResponse{
-		Message: fmt.Sprintf("Successfully removed %s from watchlist", stock),
-	})
+	return c.Status(fiber.StatusOK).JSON(res)
 }
