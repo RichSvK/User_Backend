@@ -253,7 +253,6 @@ func SendVerificationEmail(ctx context.Context, user entity.User) error {
 	)
 
 	// respect context cancellation
-	log.Println("TEST")
 	done := make(chan error, 1)
 	go func() {
 		done <- smtp.SendMail(
@@ -267,7 +266,7 @@ func SendVerificationEmail(ctx context.Context, user entity.User) error {
 
 	select {
 	case <-ctx.Done():
-		log.Println("Errorrr")
+		log.Println("Error")
 		return ctx.Err()
 	case err := <-done:
 		log.Println("Finished Email Send")
