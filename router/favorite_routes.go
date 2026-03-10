@@ -2,9 +2,11 @@ package router
 
 import (
 	"database/sql"
-	"stock_backend/handler"
-	"stock_backend/repository"
-	"stock_backend/service"
+	"os"
+	"stock_backend/internal/handler"
+	"stock_backend/internal/middleware"
+	"stock_backend/internal/repository"
+	"stock_backend/internal/service"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
@@ -12,13 +14,14 @@ import (
 )
 
 func RegisterFavoriteRoutes(router fiber.Router, db *sql.DB, redis_db *redis.Client) {
-	favoriteRouting := router.Group("/api/auth/favorites")
+	favoriteRouting := router.Group("/api/v1/auth/favorites")
 	validator := validator.New()
 	favoriteRepository := repository.NewFavoriteRepository(db, redis_db)
 	favoriteService := service.NewFavoriteService(favoriteRepository)
 	favoriteHandler := handler.NewFavoriteHandler(favoriteService, validator)
 
-	favoriteRouting.Get("/", favoriteHandler.GetFavorites)
-	favoriteRouting.Post("/", favoriteHandler.AddFavorites)
+	favoriteRouting.Use(middleware.JWTMiddleware(os.Getenv("JWT_SECRET")))
+	favoriteRouting.Get("", favoriteHandler.GetFavorites)
+	favoriteRouting.Post("", favoriteHandler.AddFavorites)
 	favoriteRouting.Delete("/:underwriter", favoriteHandler.RemoveFavorites)
 }

@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"stock_backend/model/entity"
+	"stock_backend/internal/model/entity"
 	"time"
 
 	"github.com/redis/go-redis/v9"
@@ -62,7 +62,7 @@ func (repository *FavoriteRepositoryImpl) GetFavorites(userId string, ctx contex
 	}
 
 	// If the data is not in cache
-	rows, err := repository.DB.QueryContext(ctx, `SELECT underwriter_id FROM favorites WHERE user_id = $1`, userId)
+	rows, err := repository.DB.QueryContext(ctx, `SELECT underwriterId FROM favorites WHERE userId = $1`, userId)
 
 	if err != nil {
 		return nil, err
@@ -106,11 +106,24 @@ func (repository *FavoriteRepositoryImpl) RemoveFavorite(userId string, underwri
 	}
 
 	// Delete in database
-	_, err := repository.DB.ExecContext(ctx,
-		"DELETE FROM favorites WHERE user_id = $1 AND underwriter_id = $2",
+	result, err := repository.DB.ExecContext(ctx,
+		"DELETE FROM favorites WHERE userId = $1 AND underwriterId = $2",
 		userId,
 		underwriterCode,
 	)
 
-	return err
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rowsAffected == 0 {
+		return fmt.Errorf("favorite not found this user")
+	}
+
+	return nil
 }

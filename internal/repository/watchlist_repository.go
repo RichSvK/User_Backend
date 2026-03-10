@@ -4,7 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"log"
-	domain_error "stock_backend/model/error"
+	"stock_backend/internal/model/domainerr"
 )
 
 type WatchlistRepository interface {
@@ -28,7 +28,7 @@ func (repository *WatchlistRepositoryImpl) AddWatchlist(ctx context.Context, use
 	_, err := repository.DB.ExecContext(ctx, query, userId, stock)
 
 	if err != nil {
-		return domain_error.ErrInternal
+		return domainerr.ErrInternal
 	}
 
 	return nil
@@ -38,16 +38,16 @@ func (repository *WatchlistRepositoryImpl) RemoveWatchlist(ctx context.Context, 
 	query := "DELETE FROM watchlist WHERE userid = $1 AND stock = $2"
 	res, err := repository.DB.ExecContext(ctx, query, userId, stock)
 	if err != nil {
-		return domain_error.ErrInternal
+		return domainerr.ErrInternal
 	}
 
 	rowsAffected, err := res.RowsAffected()
 	if err != nil {
-		return domain_error.ErrInternal
+		return domainerr.ErrInternal
 	}
 
 	if rowsAffected == 0 {
-		return domain_error.ErrWatchlistNotFound
+		return domainerr.ErrWatchlistNotFound
 	}
 
 	return nil
@@ -59,7 +59,7 @@ func (repository *WatchlistRepositoryImpl) GetWatchlistByUserID(ctx context.Cont
 
 	if err != nil {
 		log.Printf("query watchlist failed: %v\n", err)
-		return nil, domain_error.ErrInternal
+		return nil, domainerr.ErrInternal
 	}
 
 	defer func() {
@@ -71,14 +71,14 @@ func (repository *WatchlistRepositoryImpl) GetWatchlistByUserID(ctx context.Cont
 		var stock string
 		if err := rows.Scan(&stock); err != nil {
 			log.Printf("scan watchlist row failed: %v", err)
-			return nil, domain_error.ErrInternal
+			return nil, domainerr.ErrInternal
 		}
 		watchlist = append(watchlist, stock)
 	}
 
 	if err := rows.Err(); err != nil {
 		log.Printf("row iteration failed: %v", err)
-		return nil, domain_error.ErrInternal
+		return nil, domainerr.ErrInternal
 	}
 
 	return watchlist, nil

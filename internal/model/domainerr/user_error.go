@@ -1,4 +1,4 @@
-package domain_error
+package domainerr
 
 import "errors"
 

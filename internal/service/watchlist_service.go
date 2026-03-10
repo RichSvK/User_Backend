@@ -3,9 +3,9 @@ package service
 import (
 	"context"
 	"fmt"
-	domain_error "stock_backend/model/error"
-	"stock_backend/model/response"
-	"stock_backend/repository"
+	"stock_backend/internal/model/domainerr"
+	"stock_backend/internal/model/response"
+	"stock_backend/internal/repository"
 )
 
 type WatchlistService interface {
@@ -25,7 +25,6 @@ func NewWatchlistService(repository repository.WatchlistRepository) WatchlistSer
 }
 
 func (service *WatchlistServiceImpl) AddToWatchlist(ctx context.Context, userId string, stock string) (*response.AddWatchlistResponse, error) {
-	fmt.Println("Adding to watchlist:", userId, stock)
 	err := service.Repository.AddWatchlist(ctx, userId, stock)
 	if err != nil {
 		return nil, err
@@ -51,14 +50,13 @@ func (service *WatchlistServiceImpl) RemoveFromWatchlist(ctx context.Context, us
 
 func (service *WatchlistServiceImpl) GetWatchlist(ctx context.Context, userId string) (*response.GetWatchlistResponse, error) {
 	watchlist, err := service.Repository.GetWatchlistByUserID(ctx, userId)
-	fmt.Println("Adding to watchlist:", userId)
 
 	if err != nil {
 		return nil, err
 	}
 
 	if len(watchlist) == 0 {
-		return nil, domain_error.ErrWatchlistNotFound
+		return nil, domainerr.ErrWatchlistNotFound
 	}
 
 	response := &response.GetWatchlistResponse{

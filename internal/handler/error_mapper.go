@@ -1,24 +1,24 @@
 package handler
 
 import (
-	domain_error "stock_backend/model/error"
+	domainerr "stock_backend/internal/model/domainerr"
 
 	"github.com/gofiber/fiber/v2"
 )
 
 func MapErrorToHTTPStatus(err error) int {
 	switch err {
-	case domain_error.ErrUserNotFound:
+	case domainerr.ErrUserNotFound:
 		return fiber.StatusNotFound
-	case domain_error.ErrWrongPassword:
+	case domainerr.ErrWrongPassword:
 		return fiber.StatusUnauthorized
-	case domain_error.ErrNotVerified:
+	case domainerr.ErrNotVerified:
 		return fiber.StatusForbidden
-	case domain_error.ErrEmailExists:
+	case domainerr.ErrEmailExists:
 		return fiber.StatusConflict
-	case domain_error.ErrInvalidToken,
-		domain_error.ErrInvalidTokenClaims,
-		domain_error.ErrMissingSubject:
+	case domainerr.ErrInvalidToken,
+		domainerr.ErrInvalidTokenClaims,
+		domainerr.ErrMissingSubject:
 		return fiber.StatusUnauthorized
 	default:
 		return fiber.StatusInternalServerError

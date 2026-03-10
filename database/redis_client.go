@@ -2,13 +2,14 @@ package database
 
 import (
 	"context"
+	"log"
 	"os"
 	"time"
 
 	"github.com/redis/go-redis/v9"
 )
 
-func ConnectRedis() (*redis.Client, error) {
+func ConnectRedis() *redis.Client {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -24,8 +25,8 @@ func ConnectRedis() (*redis.Client, error) {
 
 	// Test Connection
 	if err := redisClient.Ping(ctx).Err(); err != nil {
-		return nil, err
+		log.Fatal(err.Error())
 	}
 
-	return redisClient, nil
+	return redisClient
 }

@@ -2,7 +2,7 @@ package middleware
 
 import (
 	"os"
-	"stock_backend/model/response"
+	"stock_backend/internal/model/response"
 	"strings"
 	"time"
 

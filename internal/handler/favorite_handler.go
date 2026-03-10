@@ -2,9 +2,9 @@ package handler
 
 import (
 	"context"
-	"stock_backend/model/request"
-	"stock_backend/model/response"
-	"stock_backend/service"
+	"stock_backend/internal/model/request"
+	"stock_backend/internal/model/response"
+	"stock_backend/internal/service"
 	"time"
 
 	"github.com/go-playground/validator/v10"
@@ -19,11 +19,13 @@ type FavoriteHandler interface {
 
 type FavoriteHandlerImpl struct {
 	Service service.FavoriteService
+	Validator *validator.Validate
 }
 
 func NewFavoriteHandler(service service.FavoriteService, validator *validator.Validate) FavoriteHandler {
 	return &FavoriteHandlerImpl{
 		Service: service,
+		Validator: validator,
 	}
 }
 
@@ -31,9 +33,10 @@ func (handler *FavoriteHandlerImpl) GetFavorites(c *fiber.Ctx) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 
-	userId := c.Get("X-User-ID")
-	if userId == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(response.FailedResponse{
+	// userId := c.Get("X-User-ID")
+	userId, ok := c.Locals("userId").(string)
+	if !ok || userId == "" {
+		return c.Status(fiber.StatusUnauthorized).JSON(response.FailedResponse{
 			Message: "User ID is required",
 		})
 	}
@@ -52,9 +55,10 @@ func (handler *FavoriteHandlerImpl) AddFavorites(c *fiber.Ctx) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 
-	userId := c.Get("X-User-ID")
-	if userId == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(response.FailedResponse{
+	// userId := c.Get("X-User-ID")
+	userId, ok := c.Locals("userId").(string)
+	if !ok || userId == "" {
+		return c.Status(fiber.StatusUnauthorized).JSON(response.FailedResponse{
 			Message: "User ID is required",
 		})
 	}
@@ -65,6 +69,12 @@ func (handler *FavoriteHandlerImpl) AddFavorites(c *fiber.Ctx) error {
 			Message: "Invalid request",
 		})
 	}
+
+	if err := handler.Validator.Struct(addFavoriteRequest); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(response.FailedResponse{
+			Message: err.Error(),
+		})
+	}	
 
 	res, err := handler.Service.CreateFavorite(userId, addFavoriteRequest.UnderwriterId, ctx)
 	if err != nil {
@@ -80,9 +90,10 @@ func (handler *FavoriteHandlerImpl) RemoveFavorites(c *fiber.Ctx) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 
-	userId := c.Get("X-User-ID")
-	if userId == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(response.FailedResponse{
+	// userId := c.Get("X-User-ID")
+	userId, ok := c.Locals("userId").(string)
+	if !ok || userId == "" {
+		return c.Status(fiber.StatusUnauthorized).JSON(response.FailedResponse{
 			Message: "User ID is required",
 		})
 	}

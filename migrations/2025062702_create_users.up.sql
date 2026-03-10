@@ -7,12 +7,10 @@ CREATE TABLE users (
     verified BOOLEAN NOT NULL DEFAULT FALSE,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    deleted_at TIMESTAMPTZ DEFAULT NULL
+    deleted_at TIMESTAMPTZ DEFAULT NULL,
+    CONSTRAINT fk_users_roles 
+        FOREIGN KEY  (roleId)
+        REFERENCES roles(roleId)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE
 );
-
-ALTER TABLE users
-ADD CONSTRAINT fk_users_roles
-FOREIGN KEY (roleId)
-REFERENCES roles(roleId)
-ON DELETE CASCADE
-ON UPDATE CASCADE;

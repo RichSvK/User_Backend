@@ -1,14 +1,13 @@
 package helper
 
 import (
-	"os"
 	"time"
 
 	"github.com/golang-jwt/jwt"
 )
 
-func GenerateJWT(userID string, email string, role string) (string, error) {
-	jwtSecret := []byte(os.Getenv("JWT_SECRET"))
+func GenerateJWT(userID string, email string, role string, secretKey string) (string, error) {
+	jwtSecret := []byte(secretKey)
 	claims := jwt.MapClaims{
 		"sub":   userID,
 		"email": email,
@@ -21,10 +20,10 @@ func GenerateJWT(userID string, email string, role string) (string, error) {
 	return token.SignedString(jwtSecret)
 }
 
-func ValidateJWT(tokenString string) (*jwt.Token, error) {
-	jwtSecret := []byte(os.Getenv("JWT_SECRET"))
+func ValidateJWT(tokenString string, secretKey string) (*jwt.Token, error) {
+	jwtSecret := []byte(secretKey)
 
-	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (any, error) {
 		// Validate signing method
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, jwt.ErrSignatureInvalid

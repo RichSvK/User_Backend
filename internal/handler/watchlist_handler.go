@@ -1,9 +1,9 @@
 package handler
 
 import (
-	"stock_backend/model/request"
-	"stock_backend/model/response"
-	"stock_backend/service"
+	"stock_backend/internal/model/request"
+	"stock_backend/internal/model/response"
+	"stock_backend/internal/service"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
@@ -28,7 +28,14 @@ func NewWatchlistHandler(service service.WatchlistService, validator *validator.
 }
 
 func (handler *WatchlistHandlerImpl) GetWatchlist(c *fiber.Ctx) error {
-	userId := c.Get("X-User-ID")
+	// userId := c.Get("X-User-ID")
+	userId, ok := c.Locals("userId").(string)
+	if !ok || userId == "" {
+		return c.Status(fiber.StatusUnauthorized).JSON(response.FailedResponse{
+			Message: "User ID is required",
+		})
+	}
+
 	res, err := handler.Service.GetWatchlist(c.Context(), userId)
 	if err != nil {
 		return c.Status(MapErrorToHTTPStatus(err)).JSON(response.FailedResponse{
@@ -40,7 +47,13 @@ func (handler *WatchlistHandlerImpl) GetWatchlist(c *fiber.Ctx) error {
 }
 
 func (handler *WatchlistHandlerImpl) AddWatchlist(c *fiber.Ctx) error {
-	userId := c.Get("X-User-ID")
+	// userId := c.Get("X-User-ID")
+	userId, ok := c.Locals("userId").(string)
+	if !ok || userId == "" {
+		return c.Status(fiber.StatusUnauthorized).JSON(response.FailedResponse{
+			Message: "User ID is required",
+		})
+	}
 
 	var req request.AddWatchlistRequest
 	if err := c.BodyParser(&req); err != nil {
@@ -66,8 +79,15 @@ func (handler *WatchlistHandlerImpl) AddWatchlist(c *fiber.Ctx) error {
 }
 
 func (handler *WatchlistHandlerImpl) RemoveWatchlist(c *fiber.Ctx) error {
-	userId := c.Get("X-User-ID")
 	stock := c.Params("stock")
+
+	// userId := c.Get("X-User-ID")
+	userId, ok := c.Locals("userId").(string)
+	if !ok || userId == "" {
+		return c.Status(fiber.StatusUnauthorized).JSON(response.FailedResponse{
+			Message: "User ID is required",
+		})
+	}
 
 	res, err := handler.Service.RemoveFromWatchlist(c.Context(), userId, stock)
 	if err != nil {

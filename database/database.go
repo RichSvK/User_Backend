@@ -2,6 +2,7 @@ package database
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"time"
 
@@ -10,7 +11,7 @@ import (
 	_ "github.com/lib/pq"
 )
 
-func DatabaseConfig() (*sql.DB, error) {
+func DatabaseConfig() *sql.DB {
 	dsn := fmt.Sprintf(
 		"postgres://%s:%s@%s:%s/%s?sslmode=disable",
 		os.Getenv("DB_USER"),
@@ -22,17 +23,16 @@ func DatabaseConfig() (*sql.DB, error) {
 
 	db, err := sql.Open("postgres", dsn)
 	if err != nil {
-		return nil, fmt.Errorf("failed to connect to DB: %w", err)
+		log.Fatalf("failed to connect to DB: %v", err)
 	}
 
 	if err := db.Ping(); err != nil {
-		return nil, fmt.Errorf("failed to connect to DB: %w", err)
+		log.Fatalf("failed to connect to DB: %v", err)
 	}
 
-	db.SetConnMaxLifetime(5 * time.Minute)
-	db.SetMaxIdleConns(10)
-	db.SetMaxOpenConns(100)
+	db.SetMaxIdleConns(14)
+	db.SetMaxOpenConns(30)
 	db.SetConnMaxIdleTime(2 * time.Minute)
-
-	return db, nil
+	db.SetConnMaxLifetime(10 * time.Minute)
+	return db
 }

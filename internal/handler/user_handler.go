@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"time"
 
-	"stock_backend/model/request"
-	"stock_backend/model/response"
-	"stock_backend/service"
+	"stock_backend/internal/model/request"
+	"stock_backend/internal/model/response"
+	"stock_backend/internal/service"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
@@ -135,9 +135,10 @@ func (handler *UserHandlerImpl) Logout(c *fiber.Ctx) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	userId := c.Get("X-User-ID")
-	if userId == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(response.FailedResponse{
+	// userId := c.Get("X-User-ID")
+	userId, ok := c.Locals("userId").(string)
+	if !ok || userId == "" {
+		return c.Status(fiber.StatusUnauthorized).JSON(response.FailedResponse{
 			Message: "User ID is required",
 		})
 	}
@@ -166,6 +167,13 @@ func (handler *UserHandlerImpl) DeleteUser(c *fiber.Ctx) error {
 	if err := handler.Validator.Struct(deleteRequest); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(response.FailedResponse{
 			Message: "Validation failed",
+		})
+	}
+
+	userId, ok := c.Locals("userId").(string)
+	if !ok || userId == "" || userId != deleteRequest.UserId {
+		return c.Status(fiber.StatusUnauthorized).JSON(response.FailedResponse{
+			Message: "User ID is required",
 		})
 	}
 

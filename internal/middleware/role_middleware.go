@@ -1,7 +1,7 @@
 package middleware
 
 import (
-	"stock_backend/model/response"
+	"stock_backend/internal/model/response"
 
 	"github.com/gofiber/fiber/v2"
 )

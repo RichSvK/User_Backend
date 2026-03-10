@@ -7,12 +7,12 @@ import (
 	"log"
 	"net/smtp"
 	"os"
-	"stock_backend/helper"
-	"stock_backend/model/entity"
-	domain_error "stock_backend/model/error"
-	"stock_backend/model/request"
-	"stock_backend/model/response"
-	"stock_backend/repository"
+	"stock_backend/internal/helper"
+	"stock_backend/internal/model/domainerr"
+	"stock_backend/internal/model/entity"
+	"stock_backend/internal/model/request"
+	"stock_backend/internal/model/response"
+	"stock_backend/internal/repository"
 
 	"github.com/golang-jwt/jwt"
 	"github.com/google/uuid"
@@ -29,12 +29,16 @@ type UserService interface {
 }
 
 type UserServiceImpl struct {
-	Repository repository.UserRepository
+	Repository     repository.UserRepository
+	EmailSecretKey string
+	JwtSecret string
 }
 
-func NewUserService(repository repository.UserRepository) UserService {
+func NewUserService(repository repository.UserRepository, secretKey string, jwtSecret string) UserService {
 	return &UserServiceImpl{
-		Repository: repository,
+		Repository:     repository,
+		EmailSecretKey: secretKey,
+		JwtSecret: jwtSecret,
 	}
 }
 
@@ -45,26 +49,23 @@ func (service *UserServiceImpl) Login(request request.LoginRequest, ctx context.
 	}
 
 	// Run this code if email verification is required
-	// if !user.Verified {
-	// 	go func(user entity.User) {
-	// 		bgCtx := context.Background()
-	// 		if err := SendVerificationEmail(bgCtx, user); err != nil {
-	// 			log.Println("email failed:", err)
-	// 		}
-	// 	}(*user)
+	if !user.Verified {
+		if err := SendVerificationEmail(ctx, *user); err != nil {
+			log.Println("email failed:", err)
+		}
 
-	// 	return "", domain_error.ErrNotVerified
-	// }
+		return nil, domainerr.ErrNotVerified
+	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(request.Password)); err != nil {
-		return nil, domain_error.ErrWrongPassword
+		return nil, domainerr.ErrWrongPassword
 	}
 
 	userId := user.ID.String()
 
-	token, err := helper.GenerateJWT(userId, user.Email, user.Role)
+	token, err := helper.GenerateJWT(userId, user.Email, user.Role, service.JwtSecret)
 	if err != nil {
-		return nil, domain_error.ErrInternal
+		return nil, domainerr.ErrInternal
 	}
 
 	response := &response.LoginResponse{
@@ -82,7 +83,7 @@ func (service *UserServiceImpl) Register(request request.RegisterRequest, ctx co
 	)
 
 	if err != nil {
-		return nil, domain_error.ErrInternal
+		return nil, domainerr.ErrInternal
 	}
 
 	user := entity.User{
@@ -98,14 +99,9 @@ func (service *UserServiceImpl) Register(request request.RegisterRequest, ctx co
 	}
 
 	// Run this code if email verification is required and SMTP server is configured
-	// go func() {
-	// 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	// 	defer cancel()
-
-	// 	if err := SendVerificationEmail(ctx, *createdUser); err != nil {
-	// 		log.Println("email failed:", err)
-	// 	}
-	// }()
+	if err := SendVerificationEmail(ctx, user); err != nil {
+		log.Println("email failed:", err)
+	}
 
 	response := &response.RegisterResponse{
 		Message: "Registration successful",
@@ -115,17 +111,20 @@ func (service *UserServiceImpl) Register(request request.RegisterRequest, ctx co
 }
 
 func (service *UserServiceImpl) VerifyUser(tokenString string, ctx context.Context) (*response.VerifyResponse, error) {
-	token, err := helper.ValidateJWT(tokenString)
+	token, err := helper.ValidateJWT(tokenString, service.EmailSecretKey)
 	if err != nil {
-		return nil, domain_error.ErrInvalidToken
+		return nil, domainerr.ErrInvalidToken
 	}
 
 	claims, ok := token.Claims.(jwt.MapClaims)
 	if !ok || !token.Valid {
-		return nil, domain_error.ErrInvalidTokenClaims
+		return nil, domainerr.ErrInvalidTokenClaims
 	}
 
-	userId := claims["sub"].(string)
+	userId, ok := claims["sub"].(string)
+	if !ok || userId == "" {
+		return nil, domainerr.ErrInvalidTokenClaims
+	}
 
 	if err := service.Repository.VerifyUser(userId, ctx); err != nil {
 		return nil, err
@@ -182,24 +181,21 @@ func SendVerificationEmail(ctx context.Context, user entity.User) error {
 	smtpHost := os.Getenv("SMTP_HOST")
 	smtpPort := os.Getenv("SMTP_PORT")
 	appHost := os.Getenv("APP_HOST")
+	appPort := os.Getenv("APP_PORT")
+	emailSecret := os.Getenv("EMAIL_SECRET_KEY")
 
-	if smtpUser == "" || smtpPass == "" || smtpHost == "" || smtpPort == "" || appHost == "" {
+	if smtpUser == "" || smtpPass == "" || smtpHost == "" || smtpPort == "" || appHost == "" || appPort == "" {
 		return errors.New("missing smtp configuration")
 	}
 
 	auth := smtp.PlainAuth("", smtpUser, smtpPass, smtpHost)
 
-	token, err := helper.GenerateJWT(user.ID.String(), user.Email, user.Role)
+	token, err := helper.GenerateJWT(user.ID.String(), user.Email, user.Role, emailSecret)
 	if err != nil {
 		return err
 	}
 
-	verifyURL := fmt.Sprintf(
-		"%s/api/user/verify?token=%s",
-		appHost,
-		token,
-	)
-
+	verifyURL := fmt.Sprintf("http://%s:%s/api/v1/users/verify?token=%s", appHost, appPort, token)
 	subject := "Verify your Stock App account"
 
 	htmlBody := fmt.Sprintf(`

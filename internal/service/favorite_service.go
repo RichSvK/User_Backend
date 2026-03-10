@@ -3,9 +3,9 @@ package service
 import (
 	"context"
 	"fmt"
-	"stock_backend/model/entity"
-	"stock_backend/model/response"
-	"stock_backend/repository"
+	"stock_backend/internal/model/entity"
+	"stock_backend/internal/model/response"
+	"stock_backend/internal/repository"
 )
 
 type FavoriteService interface {

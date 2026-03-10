@@ -2,9 +2,11 @@ package router
 
 import (
 	"database/sql"
-	"stock_backend/handler"
-	"stock_backend/repository"
-	"stock_backend/service"
+	"os"
+	"stock_backend/internal/handler"
+	"stock_backend/internal/middleware"
+	"stock_backend/internal/repository"
+	"stock_backend/internal/service"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
@@ -16,8 +18,9 @@ func RegisterWatchlistRoutes(router fiber.Router, db *sql.DB) {
 	watchlistService := service.NewWatchlistService(watchlistRepository)
 	watchlistHandler := handler.NewWatchlistHandler(watchlistService, validator)
 
-	authRouting := router.Group("/api/auth/watchlist")
-	authRouting.Get("/", watchlistHandler.GetWatchlist)
-	authRouting.Post("/", watchlistHandler.AddWatchlist)
+	authRouting := router.Group("/api/v1/auth/watchlist")
+	authRouting.Use(middleware.JWTMiddleware(os.Getenv("JWT_SECRET")))
+	authRouting.Get("", watchlistHandler.GetWatchlist)
+	authRouting.Post("", watchlistHandler.AddWatchlist)
 	authRouting.Delete("/:stock", watchlistHandler.RemoveWatchlist)
 }

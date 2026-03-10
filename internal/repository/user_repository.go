@@ -5,8 +5,8 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
-	"stock_backend/model/entity"
-	domain_error "stock_backend/model/error"
+	"stock_backend/internal/model/entity"
+	"stock_backend/internal/model/domainerr"
 
 	"github.com/redis/go-redis/v9"
 )
@@ -39,11 +39,11 @@ func (repository *UserRepositoryImpl) GetUser(email string, ctx context.Context)
 	var user entity.User
 	err := row.Scan(&user.ID, &user.Username, &user.Email, &user.Password, &user.Role, &user.Verified)
 	if err == sql.ErrNoRows {
-		return nil, domain_error.ErrUserNotFound
+		return nil, domainerr.ErrUserNotFound
 	}
 
 	if err != nil {
-		return nil, domain_error.ErrInternal
+		return nil, domainerr.ErrInternal
 	}
 
 	return &user, nil
@@ -77,7 +77,7 @@ func (repository *UserRepositoryImpl) Create(user entity.User, ctx context.Conte
 	).Scan(&createdUser.ID, &createdUser.Username, &createdUser.Email, &createdUser.Verified)
 
 	if err != nil {
-		return nil, domain_error.ErrInternal
+		return nil, domainerr.ErrInternal
 	}
 
 	return &createdUser, tx.Commit()
@@ -87,12 +87,12 @@ func (repository *UserRepositoryImpl) VerifyUser(userId string, ctx context.Cont
 	query := "UPDATE users SET verified = TRUE WHERE id = $1"
 	res, err := repository.DB.ExecContext(ctx, query, userId)
 	if err != nil {
-		return domain_error.ErrInternal
+		return domainerr.ErrInternal
 	}
 
 	rows, _ := res.RowsAffected()
 	if rows == 0 {
-		return domain_error.ErrUserNotFound
+		return domainerr.ErrUserNotFound
 	}
 
 	return nil
@@ -105,7 +105,7 @@ func (repository *UserRepositoryImpl) Logout(userId string, ctx context.Context)
 			ctx,
 			fmt.Sprintf("favorites:%s", userId),
 		).Err(); err != nil {
-			return domain_error.ErrInternal
+			return domainerr.ErrInternal
 		}
 	}
 
@@ -116,16 +116,16 @@ func (repository *UserRepositoryImpl) DeleteUser(userId string, ctx context.Cont
 	query := "DELETE FROM users WHERE id = $1"
 	res, err := repository.DB.ExecContext(ctx, query, userId)
 	if err != nil {
-		return domain_error.ErrInternal
+		return domainerr.ErrInternal
 	}
 
 	rowsAffected, err := res.RowsAffected()
 	if err != nil {
-		return domain_error.ErrInternal
+		return domainerr.ErrInternal
 	}
 
 	if rowsAffected == 0 {
-		return domain_error.ErrUserNotFound
+		return domainerr.ErrUserNotFound
 	}
 
 	// Remove user favorites from Redis cache
@@ -143,11 +143,11 @@ func (repository *UserRepositoryImpl) GetUserByID(userId string, ctx context.Con
 	err := row.Scan(&user.ID, &user.Username, &user.Email)
 
 	if err == sql.ErrNoRows {
-		return nil, domain_error.ErrUserNotFound
+		return nil, domainerr.ErrUserNotFound
 	}
 
 	if err != nil {
-		return nil, domain_error.ErrInternal
+		return nil, domainerr.ErrInternal
 	}
 
 	return &user, nil
