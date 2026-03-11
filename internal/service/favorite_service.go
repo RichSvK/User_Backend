@@ -3,15 +3,16 @@ package service
 import (
 	"context"
 	"fmt"
+	"stock_backend/internal/model/domainerr"
 	"stock_backend/internal/model/entity"
 	"stock_backend/internal/model/response"
 	"stock_backend/internal/repository"
 )
 
 type FavoriteService interface {
-	CreateFavorite(userId string, underwriterId string, ctx context.Context) (*response.AddFavorite, error)
-	GetFavorites(userId string, ctx context.Context) (*response.GetFavorites, error)
-	RemoveFavorite(userId string, underwriterCode string, ctx context.Context) (*response.RemoveFavorite, error)
+	CreateFavorite(userId string, underwriterId string, ctx context.Context) (*response.AddFavoriteResponse, error)
+	GetFavorites(userId string, ctx context.Context) (*response.GetFavoritesResponse, error)
+	RemoveFavorite(userId string, underwriterCode string, ctx context.Context) (*response.RemoveFavoriteResponse, error)
 }
 
 type FavoriteServiceImpl struct {
@@ -24,7 +25,7 @@ func NewFavoriteService(repository repository.FavoriteRepository) FavoriteServic
 	}
 }
 
-func (service *FavoriteServiceImpl) CreateFavorite(userId string, underwriterId string, ctx context.Context) (*response.AddFavorite, error) {
+func (service *FavoriteServiceImpl) CreateFavorite(userId string, underwriterId string, ctx context.Context) (*response.AddFavoriteResponse, error) {
 	favorite := &entity.Favorite{
 		UserID:        userId,
 		UnderwriterID: underwriterId,
@@ -34,32 +35,36 @@ func (service *FavoriteServiceImpl) CreateFavorite(userId string, underwriterId 
 		return nil, err
 	}
 
-	response := &response.AddFavorite{
+	response := &response.AddFavoriteResponse{
 		Message: fmt.Sprintf("Add %s to favorite success", underwriterId),
 	}
 
 	return response, nil
 }
 
-func (service *FavoriteServiceImpl) GetFavorites(userId string, ctx context.Context) (*response.GetFavorites, error) {
+func (service *FavoriteServiceImpl) GetFavorites(userId string, ctx context.Context) (*response.GetFavoritesResponse, error) {
 	favoriteData, err := service.Repository.GetFavorites(userId, ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	response := &response.GetFavorites{
+	if len(favoriteData) == 0 {
+		return nil, domainerr.ErrFavoritesNotFound
+	}
+
+	response := &response.GetFavoritesResponse{
 		Message: "Favorite Found",
 		Data:    favoriteData,
 	}
 	return response, nil
 }
 
-func (service *FavoriteServiceImpl) RemoveFavorite(userId string, underwriterCode string, ctx context.Context) (*response.RemoveFavorite, error) {
+func (service *FavoriteServiceImpl) RemoveFavorite(userId string, underwriterCode string, ctx context.Context) (*response.RemoveFavoriteResponse, error) {
 	if err := service.Repository.RemoveFavorite(userId, underwriterCode, ctx); err != nil {
 		return nil, err
 	}
 
-	response := &response.RemoveFavorite{
+	response := &response.RemoveFavoriteResponse{
 		Message: "Remove favorite success",
 	}
 

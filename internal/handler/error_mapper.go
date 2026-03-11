@@ -24,3 +24,14 @@ func MapErrorToHTTPStatus(err error) int {
 		return fiber.StatusInternalServerError
 	}
 }
+
+func MapFavoritesErrorToHTTPStatus(err error) int {
+	switch err {
+	case domainerr.ErrFavoritesNotFound:
+		return fiber.StatusNotFound
+	case domainerr.ErrFavoritesDuplicate:
+		return fiber.StatusConflict
+	default:
+		return fiber.StatusInternalServerError
+	}
+}

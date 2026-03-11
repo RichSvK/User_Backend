@@ -11,7 +11,7 @@ import (
 )
 
 func TestRegister(t *testing.T) {
-	ClearUser()
+	ClearTable("users")
 	requestBody := request.RegisterRequest{
 		Email:    "richardsugiharto0@gmail.com",
 		Password: "87654321",

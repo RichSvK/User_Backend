@@ -1,14 +1,14 @@
 package response
 
-type AddFavorite struct {
+type AddFavoriteResponse struct {
 	Message string `json:"message"`
 }
 
-type RemoveFavorite struct {
+type RemoveFavoriteResponse struct {
 	Message string `json:"message"`
 }
 
-type GetFavorites struct {
+type GetFavoritesResponse struct {
 	Message string   `json:"message"`
 	Data    []string `json:"data"`
 }

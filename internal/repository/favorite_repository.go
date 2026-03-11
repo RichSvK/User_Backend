@@ -6,9 +6,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"stock_backend/internal/model/domainerr"
 	"stock_backend/internal/model/entity"
 	"time"
 
+	"github.com/lib/pq"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -38,6 +40,11 @@ func (repository *FavoriteRepositoryImpl) Create(favorite *entity.Favorite, ctx 
 		favorite.UserID,
 		favorite.UnderwriterID,
 	); err != nil {
+		if pqErr, ok := err.(*pq.Error); ok {
+			if pqErr.Code == "23505" {
+				return domainerr.ErrFavoritesDuplicate
+			}
+		}
 		return err
 	}
 
@@ -122,7 +129,7 @@ func (repository *FavoriteRepositoryImpl) RemoveFavorite(userId string, underwri
 	}
 
 	if rowsAffected == 0 {
-		return fmt.Errorf("favorite not found this user")
+		return domainerr.ErrFavoritesNotFound
 	}
 
 	return nil

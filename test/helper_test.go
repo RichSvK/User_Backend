@@ -2,14 +2,18 @@ package test
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"log"
+	"net/http"
 	"net/http/httptest"
+	"stock_backend/internal/model/request"
+	"stock_backend/internal/model/response"
 	"strings"
 )
 
-func ClearUser() {
-	res, err := db.Exec("DELETE FROM users")
+func ClearTable(tableName string) {
+	res, err := db.Exec(fmt.Sprintf("DELETE FROM %s", tableName))
 	if err != nil {
 		log.Fatalf("Failed clear user data : %+v", err)
 	}
@@ -60,4 +64,24 @@ func PerformRequest[T any](requestBody any, url string, httpMethod string, httpH
 	}
 
 	return result, res.StatusCode, nil
+}
+
+func GetUserToken(email string, password string) (string, error){
+	requestBody := request.LoginRequest{
+		Email:    email,
+		Password: password,
+	}
+
+	httpHeader := map[string]string{
+		"Content-Type": "application/json",
+		"Accept":       "application/json",
+	}
+
+	url := "/api/v1/users/login"
+	result, _, err := PerformRequest[*response.LoginResponse](requestBody, url, http.MethodPost, httpHeader)
+	if err != nil {
+		return "", err
+	}
+
+	return result.Token, nil
 }

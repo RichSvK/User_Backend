@@ -43,7 +43,7 @@ func (handler *FavoriteHandlerImpl) GetFavorites(c *fiber.Ctx) error {
 
 	res, err := handler.Service.GetFavorites(userId, ctx)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(response.FailedResponse{
+		return c.Status(MapFavoritesErrorToHTTPStatus(err)).JSON(response.FailedResponse{
 			Message: err.Error(),
 		})
 	}
@@ -62,7 +62,7 @@ func (handler *FavoriteHandlerImpl) AddFavorites(c *fiber.Ctx) error {
 		})
 	}
 
-	var addFavoriteRequest request.FavoriteUnderwriterRequest
+	var addFavoriteRequest request.AddFavoriteUnderwriterRequest
 	if err := c.BodyParser(&addFavoriteRequest); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(response.FailedResponse{
 			Message: "Invalid request",
@@ -77,7 +77,7 @@ func (handler *FavoriteHandlerImpl) AddFavorites(c *fiber.Ctx) error {
 
 	res, err := handler.Service.CreateFavorite(userId, addFavoriteRequest.UnderwriterId, ctx)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(response.FailedResponse{
+		return c.Status(MapFavoritesErrorToHTTPStatus(err)).JSON(response.FailedResponse{
 			Message: err.Error(),
 		})
 	}
@@ -105,7 +105,7 @@ func (handler *FavoriteHandlerImpl) RemoveFavorites(c *fiber.Ctx) error {
 
 	res, err := handler.Service.RemoveFavorite(userId, underwriterCode, ctx)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(response.FailedResponse{
+		return c.Status(MapFavoritesErrorToHTTPStatus(err)).JSON(response.FailedResponse{
 			Message: err.Error(),
 		})
 	}

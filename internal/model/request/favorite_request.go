@@ -1,5 +1,5 @@
 package request
 
-type FavoriteUnderwriterRequest struct {
+type AddFavoriteUnderwriterRequest struct {
 	UnderwriterId string `json:"underwriter_id" validate:"required"`
 }
