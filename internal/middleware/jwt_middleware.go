@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"net/http"
 	"strings"
 	"time"
 
@@ -14,12 +15,16 @@ func JWTMiddleware(secretKey string) fiber.Handler {
 
 		// If the token is empty, allow the request to proceed
 		if auth == "" {
-			return fiber.ErrUnauthorized
+			return c.Status(http.StatusUnauthorized).JSON(fiber.Map{
+				"message": "Authorization header is required",
+			})
 		}
 
 		parts := strings.SplitN(auth, " ", 2)
 		if len(parts) != 2 || parts[0] != "Bearer" {
-			return fiber.ErrUnauthorized
+			return c.Status(http.StatusUnauthorized).JSON(fiber.Map{
+				"message": "Unauthorized",
+			})
 		}
 		tokenStr := parts[1]
 
@@ -27,13 +32,17 @@ func JWTMiddleware(secretKey string) fiber.Handler {
 		token, err := jwt.Parse(tokenStr, func(t *jwt.Token) (interface{}, error) {
 			// Check if the signing method is HMAC
 			if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
-				return nil, fiber.ErrUnauthorized
+				return nil, c.Status(http.StatusUnauthorized).JSON(fiber.Map{
+					"message": "Unauthorized",
+				})
 			}
 			return []byte(secretKey), nil
 		})
 
 		if err != nil || !token.Valid {
-			return fiber.ErrUnauthorized
+			return c.Status(http.StatusUnauthorized).JSON(fiber.Map{
+				"message": "Unauthorized",
+			})
 		}
 
 		claims := token.Claims.(jwt.MapClaims)
@@ -41,18 +50,24 @@ func JWTMiddleware(secretKey string) fiber.Handler {
 		// Check for expired date JWT
 		exp, ok := claims["exp"].(float64)
 		if !ok || int64(exp) < time.Now().Unix() {
-			return fiber.ErrUnauthorized
+			return c.Status(http.StatusUnauthorized).JSON(fiber.Map{
+				"message": "Token has expired",
+			})
 		}
 
 		sub, ok := claims["sub"].(string)
 		if !ok {
-			return fiber.ErrUnauthorized
+			return c.Status(http.StatusUnauthorized).JSON(fiber.Map{
+				"message": "Invalid token subject",
+			})
 		}
 		c.Locals("userId", sub)
 
 		role, ok := claims["role"].(string)
 		if !ok {
-			return fiber.ErrUnauthorized
+			return c.Status(http.StatusUnauthorized).JSON(fiber.Map{
+				"message": "Invalid token role",
+			})
 		}
 		c.Locals("role", role)
 

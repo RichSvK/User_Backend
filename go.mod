@@ -11,7 +11,7 @@ require (
 
 require (
 	github.com/golang-jwt/jwt v3.2.2+incompatible // direct
-	github.com/stretchr/testify v1.10.0 // indirect
+	github.com/stretchr/testify v1.10.0
 )
 
 require (
@@ -21,9 +21,12 @@ require (
 
 require (
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
+	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/philhofer/fwd v1.1.3-0.20240916144458-20a13a1f6b7c // indirect
+	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/tinylib/msgp v1.2.5 // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
 require github.com/joho/godotenv v1.5.1 // direct

@@ -31,14 +31,14 @@ type UserService interface {
 type UserServiceImpl struct {
 	Repository     repository.UserRepository
 	EmailSecretKey string
-	JwtSecret string
+	JwtSecret      string
 }
 
 func NewUserService(repository repository.UserRepository, secretKey string, jwtSecret string) UserService {
 	return &UserServiceImpl{
 		Repository:     repository,
 		EmailSecretKey: secretKey,
-		JwtSecret: jwtSecret,
+		JwtSecret:      jwtSecret,
 	}
 }
 
@@ -49,13 +49,13 @@ func (service *UserServiceImpl) Login(request request.LoginRequest, ctx context.
 	}
 
 	// Run this code if email verification is required
-	if !user.Verified {
-		if err := SendVerificationEmail(ctx, *user); err != nil {
-			log.Println("email failed:", err)
-		}
+	// if !user.Verified {
+	// 	if err := SendVerificationEmail(ctx, *user); err != nil {
+	// 		log.Println("email failed:", err)
+	// 	}
 
-		return nil, domainerr.ErrNotVerified
-	}
+	// 	return nil, domainerr.ErrNotVerified
+	// }
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(request.Password)); err != nil {
 		return nil, domainerr.ErrWrongPassword
@@ -94,14 +94,14 @@ func (service *UserServiceImpl) Register(request request.RegisterRequest, ctx co
 	}
 
 	// var createdUser *entity.User
-	if _, err = service.Repository.Create(user, ctx); err != nil {
+	if _, err := service.Repository.Create(user, ctx); err != nil {
 		return nil, err
 	}
 
 	// Run this code if email verification is required and SMTP server is configured
-	if err := SendVerificationEmail(ctx, user); err != nil {
-		log.Println("email failed:", err)
-	}
+	// if err := SendVerificationEmail(ctx, user); err != nil {
+	// 	log.Println("email failed:", err)
+	// }
 
 	response := &response.RegisterResponse{
 		Message: "Registration successful",

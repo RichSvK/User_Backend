@@ -1,4 +1,5 @@
 # env files
 .env
+test.env
 *.rdb
 .DS_Store
