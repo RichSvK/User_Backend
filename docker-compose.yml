@@ -1,0 +1,58 @@
+services:
+  postgres_db:
+    image: postgres:16
+    container_name: postgres_database
+    restart: unless-stopped
+    env_file: 
+      - ./.env
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+        
+  migrate:
+    image: migrate/migrate
+    container_name: db_migrate
+    depends_on:
+      postgres_db:
+        condition: service_healthy
+    volumes:
+      - ./migrations:/migrations
+    command: 
+      [
+        "-path=/migrations",
+        "-database=postgres://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}?sslmode=disable",
+        "-verbose",
+        "up"
+      ]
+    env_file:
+      - ./.env
+
+  redis_db:
+    image: redis:latest
+    container_name: redis_db
+    ports: 
+      - "6379:6379"
+    volumes:
+      - "redis_data:/data"
+  
+  user_app:
+    build: .
+    container_name: user_app
+    restart: unless-stopped
+    env_file: 
+      - ./.env
+    ports:
+      - "8888:8888"
+    depends_on:
+      - migrate
+      - redis_db
+
+volumes:
+  postgres_data:
+  redis_data:
