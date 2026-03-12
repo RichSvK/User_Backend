@@ -3,6 +3,8 @@ package test
 import (
 	"fmt"
 	"net/http"
+	"os"
+	"stock_backend/internal/helper"
 	"stock_backend/internal/model/request"
 	"stock_backend/internal/model/response"
 	"testing"
@@ -11,11 +13,10 @@ import (
 )
 
 func TestRegister(t *testing.T) {
-	ClearTable("users")
 	requestBody := request.RegisterRequest{
-		Email:    "richardsugiharto0@gmail.com",
-		Password: "87654321",
-		Username: "rich_svk",
+		Email:    "test@gmail.com",
+		Password: password,
+		Username: "test_username_2",
 	}
 
 	httpHeader := map[string]string{
@@ -32,6 +33,25 @@ func TestRegister(t *testing.T) {
 }
 
 func TestRegisterBadRequest(t *testing.T) {
+	requestBody := map[string]any{
+		"Email":    "",
+		"Password": 12345678,
+	}
+
+	httpHeader := map[string]string{
+		"Content-Type": "application/json",
+		"Accept":       "application/json",
+	}
+
+	url := "/api/v1/users/register"
+	result, statusCode, err := PerformRequest[*response.FailedResponse](requestBody, url, http.MethodPost, httpHeader)
+	assert.Nil(t, err)
+
+	assert.Equal(t, http.StatusBadRequest, statusCode)
+	assert.Equal(t, "Invalid request", result.Message)
+}
+
+func TestRegisterValidationFailed(t *testing.T) {
 	requestBody := request.RegisterRequest{
 		Email:    "",
 		Password: "",
@@ -44,7 +64,7 @@ func TestRegisterBadRequest(t *testing.T) {
 	}
 
 	url := "/api/v1/users/register"
-	result, statusCode, err := PerformRequest[*response.RegisterResponse](requestBody, url, http.MethodPost, httpHeader)
+	result, statusCode, err := PerformRequest[*response.FailedResponse](requestBody, url, http.MethodPost, httpHeader)
 	assert.Nil(t, err)
 
 	assert.Equal(t, http.StatusBadRequest, statusCode)
@@ -53,9 +73,9 @@ func TestRegisterBadRequest(t *testing.T) {
 
 func TestRegisterDuplicate(t *testing.T) {
 	requestBody := request.RegisterRequest{
-		Email:    "richardsugiharto0@gmail.com",
-		Password: "87654321",
-		Username: "rich_svk",
+		Email:    email,
+		Password: password,
+		Username: "test_username",
 	}
 
 	httpHeader := map[string]string{
@@ -67,14 +87,14 @@ func TestRegisterDuplicate(t *testing.T) {
 	result, statusCode, err := PerformRequest[*response.RegisterResponse](requestBody, url, http.MethodPost, httpHeader)
 	assert.Nil(t, err)
 
-	assert.Equal(t, http.StatusInternalServerError, statusCode)
-	assert.Equal(t, "internal server error", result.Message)
+	assert.Equal(t, http.StatusConflict, statusCode)
+	assert.Equal(t, "email already registered", result.Message)
 }
 
 func TestLogin(t *testing.T) {
 	requestBody := request.LoginRequest{
-		Email:    "richardsugiharto0@gmail.com",
-		Password: "87654321",
+		Email:    email,
+		Password: password,
 	}
 
 	httpHeader := map[string]string{
@@ -93,7 +113,7 @@ func TestLogin(t *testing.T) {
 
 func TestLoginWrongPassword(t *testing.T) {
 	requestBody := request.LoginRequest{
-		Email:    "richardsugiharto0@gmail.com",
+		Email:    email,
 		Password: "12345678",
 	}
 
@@ -103,7 +123,7 @@ func TestLoginWrongPassword(t *testing.T) {
 	}
 
 	url := "/api/v1/users/login"
-	result, statusCode, err := PerformRequest[*response.LoginResponse](requestBody, url, http.MethodPost, httpHeader)
+	result, statusCode, err := PerformRequest[*response.FailedResponse](requestBody, url, http.MethodPost, httpHeader)
 	assert.Nil(t, err)
 
 	assert.Equal(t, http.StatusUnauthorized, statusCode)
@@ -111,8 +131,27 @@ func TestLoginWrongPassword(t *testing.T) {
 }
 
 func TestLoginBadRequest(t *testing.T) {
+	requestBody := map[string]any{
+		"Email":    123456,
+		"Password": "8765",
+	}
+
+	httpHeader := map[string]string{
+		"Content-Type": "application/json",
+		"Accept":       "application/json",
+	}
+
+	url := "/api/v1/users/login"
+	result, statusCode, err := PerformRequest[*response.FailedResponse](requestBody, url, http.MethodPost, httpHeader)
+	assert.Nil(t, err)
+
+	assert.Equal(t, http.StatusBadRequest, statusCode)
+	assert.Equal(t, "Invalid request", result.Message)
+}
+
+func TestLoginMinPassword(t *testing.T) {
 	requestBody := request.LoginRequest{
-		Email:    "richardsugiharto0@gmail.com",
+		Email:    "test@gmail.com",
 		Password: "8765",
 	}
 
@@ -122,17 +161,73 @@ func TestLoginBadRequest(t *testing.T) {
 	}
 
 	url := "/api/v1/users/login"
-	result, statusCode, err := PerformRequest[*response.LoginResponse](requestBody, url, http.MethodPost, httpHeader)
+	result, statusCode, err := PerformRequest[*response.FailedResponse](requestBody, url, http.MethodPost, httpHeader)
 	assert.Nil(t, err)
 
 	assert.Equal(t, http.StatusBadRequest, statusCode)
 	assert.Equal(t, "Password must be at least 6 characters", result.Message)
 }
 
+func TestLoginBadRequiredField(t *testing.T) {
+	requestBody := request.LoginRequest{
+		Password: "8765",
+	}
+
+	httpHeader := map[string]string{
+		"Content-Type": "application/json",
+		"Accept":       "application/json",
+	}
+
+	url := "/api/v1/users/login"
+	result, statusCode, err := PerformRequest[*response.FailedResponse](requestBody, url, http.MethodPost, httpHeader)
+	assert.Nil(t, err)
+
+	assert.Equal(t, http.StatusBadRequest, statusCode)
+	assert.Equal(t, "Email is required", result.Message)
+}
+
+func TestLoginBadEmailField(t *testing.T) {
+	requestBody := request.LoginRequest{
+		Email:    "test123",
+		Password: "8765",
+	}
+
+	httpHeader := map[string]string{
+		"Content-Type": "application/json",
+		"Accept":       "application/json",
+	}
+
+	url := "/api/v1/users/login"
+	result, statusCode, err := PerformRequest[*response.FailedResponse](requestBody, url, http.MethodPost, httpHeader)
+	assert.Nil(t, err)
+
+	assert.Equal(t, http.StatusBadRequest, statusCode)
+	assert.Equal(t, "Email must be a valid email address", result.Message)
+}
+
+func TestLoginNotFound(t *testing.T) {
+	requestBody := request.LoginRequest{
+		Email:    "test_3@gmail.com",
+		Password: password,
+	}
+
+	httpHeader := map[string]string{
+		"Content-Type": "application/json",
+		"Accept":       "application/json",
+	}
+
+	url := "/api/v1/users/login"
+	result, statusCode, err := PerformRequest[*response.FailedResponse](requestBody, url, http.MethodPost, httpHeader)
+	assert.Nil(t, err)
+
+	assert.Equal(t, http.StatusNotFound, statusCode)
+	assert.Equal(t, "user not found", result.Message)
+}
+
 func TestLogoutSuccess(t *testing.T) {
 	requestBody := request.LoginRequest{
-		Email:    "richardsugiharto0@gmail.com",
-		Password: "87654321",
+		Email:    email,
+		Password: password,
 	}
 
 	httpHeader := map[string]string{
@@ -174,8 +269,8 @@ func TestLogoutFailed(t *testing.T) {
 
 func TestGetProfile(t *testing.T) {
 	requestBody := request.LoginRequest{
-		Email:    "richardsugiharto0@gmail.com",
-		Password: "87654321",
+		Email:    email,
+		Password: password,
 	}
 
 	httpHeader := map[string]string{
@@ -199,11 +294,11 @@ func TestGetProfile(t *testing.T) {
 	assert.Nil(t, err)
 
 	assert.Equal(t, http.StatusOK, statusCode)
-	assert.Equal(t, "richardsugiharto0@gmail.com", profileResult.Email)
-	assert.Equal(t, "rich_svk", profileResult.Username)
+	assert.Equal(t, email, profileResult.Email)
+	assert.Equal(t, "test_username", profileResult.Username)
 }
 
-func TestGetProfileFailed(t *testing.T) {
+func TestGetProfileUnauthorized(t *testing.T) {
 	httpHeader := map[string]string{
 		"Accept": "application/json",
 	}
@@ -214,4 +309,117 @@ func TestGetProfileFailed(t *testing.T) {
 
 	assert.Equal(t, http.StatusUnauthorized, statusCode)
 	assert.Equal(t, "Authorization header is required", result.Message)
+}
+
+func TestVerifyUserTokenEmpty(t *testing.T) {
+	httpHeader := map[string]string{
+		"Accept": "application/json",
+	}
+
+	url := "/api/v1/users/verify?token="
+	result, statusCode, err := PerformRequest[*response.FailedResponse](nil, url, http.MethodGet, httpHeader)
+	assert.Nil(t, err)
+
+	assert.Equal(t, http.StatusBadRequest, statusCode)
+	assert.Equal(t, "Token is required", result.Message)
+}
+
+func TestVerifyUserInvalidToken(t *testing.T) {
+	httpHeader := map[string]string{
+		"Accept": "application/json",
+	}
+
+	url := "/api/v1/users/verify?token=123456789"
+	result, statusCode, err := PerformRequest[*response.FailedResponse](nil, url, http.MethodGet, httpHeader)
+	assert.Nil(t, err)
+
+	assert.Equal(t, http.StatusUnauthorized, statusCode)
+	assert.Equal(t, "invalid token", result.Message)
+}
+
+func TestVerifyUser(t *testing.T) {
+	httpHeader := map[string]string{
+		"Accept": "application/json",
+	}
+
+	var userId string
+	var roleId int
+	role := "user"
+	err := db.QueryRow("SELECT id, roleId FROM users WHERE email = $1", email).
+		Scan(&userId, &roleId)
+	assert.Nil(t, err)
+
+	if roleId == 2 {
+		role = "admin"
+	}
+
+	verifyToken, err := helper.GenerateJWT(userId, email, role, os.Getenv("EMAIL_SECRET_KEY"))
+	assert.Nil(t, err)
+
+	url := "/api/v1/users/verify?token=" + verifyToken
+	result, statusCode, err := PerformRequest[*response.VerifyResponse](nil, url, http.MethodGet, httpHeader)
+	assert.Nil(t, err)
+
+	assert.Equal(t, http.StatusOK, statusCode)
+	assert.Equal(t, "User verified successfully", result.Message)
+}
+
+func TestVerifyUserVerified(t *testing.T) {
+	httpHeader := map[string]string{
+		"Accept": "application/json",
+	}
+
+	var userId string
+	var roleId int
+	role := "user"
+	err := db.QueryRow("SELECT id, roleId FROM users WHERE email = $1", email).
+		Scan(&userId, &roleId)
+	assert.Nil(t, err)
+
+	if roleId == 2 {
+		role = "admin"
+	}
+
+	verifyToken, err := helper.GenerateJWT(userId, email, role, os.Getenv("EMAIL_SECRET_KEY"))
+	assert.Nil(t, err)
+
+	url := "/api/v1/users/verify?token=" + verifyToken
+	result, statusCode, err := PerformRequest[*response.FailedResponse](nil, url, http.MethodGet, httpHeader)
+	assert.Nil(t, err)
+
+	assert.Equal(t, http.StatusConflict, statusCode)
+	assert.Equal(t, "user is already verified", result.Message)
+}
+
+func TestDeleteUser(t *testing.T) {
+	deletedEmail := "test_3@gmail.com"
+	err := CreateTestUser(deletedEmail, password)
+	assert.Nil(t, err)
+
+	var userId string
+	err = db.QueryRow("SELECT id FROM users WHERE email = $1", deletedEmail).
+		Scan(&userId)
+	assert.Nil(t, err)
+
+	requestBody := request.DeleteUserRequest{
+		UserId: userId,
+	}
+
+	httpheader := map[string]string{
+		"Authorization": "Bearer " + adminToken,
+		"Accept":        "application/json",
+		"Content-Type":  "application/json",
+	}
+	url := "/api/v1/auth/users"
+	result, statusCode, err := PerformRequest[*response.DeleteUserResponse](requestBody, url, http.MethodDelete, httpheader)
+	assert.Nil(t, err)
+
+	assert.Equal(t, http.StatusOK, statusCode)
+	assert.Equal(t, "User deleted successfully", result.Message)
+
+	failedRes, statusCode, err := PerformRequest[*response.FailedResponse](requestBody, url, http.MethodDelete, httpheader)
+	assert.Nil(t, err)
+
+	assert.Equal(t, http.StatusNotFound, statusCode)
+	assert.Equal(t, "user not found", failedRes.Message)
 }

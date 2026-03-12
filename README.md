@@ -18,15 +18,16 @@ Software used in developing this program:
 
 ## API Endpoints
 ### Watchlist Management
-- `GET /api/auth/watchlist` - Retrieve user's stock watchlist
-- `POST /api/auth/watchlist` - Add stock to watchlist
-- `DELETE /api/auth/watchlist/:stock` - Remove stock from watchlist
+- `GET /api/v1/auth/watchlist` - Retrieve user's stock watchlist
+- `POST /api/v1/auth/watchlist` - Add stock to watchlist
+- `DELETE /api/v1/auth/watchlist/:stock` - Remove stock from watchlist
 
 ### Authentication
-- `POST /api/user/register` - Create new user account
-- `POST /api/user/login` - User login
-- `POST /api/auth/user/logout` - User logout
+- `POST /api/v1/users/register` - Create new user account
+- `POST /api/v1/users/login` - User login
+- `POST /api/v1/auth/user/logout` - User logout
 
 ### User Account
-- `GET /api/auth/user/profile` - Get user profile
-- `DELETE /api/auth/user/delete` - Delete user account
+- `GET /api/v1/auth/users/profile` - Get user profile
+- `DELETE /api/v1/auth/users` - Delete user account by admin
+- `GET /api/v1/users/verify` - Verify user account

@@ -5,9 +5,10 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
-	"stock_backend/internal/model/entity"
 	"stock_backend/internal/model/domainerr"
+	"stock_backend/internal/model/entity"
 
+	"github.com/lib/pq"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -77,6 +78,11 @@ func (repository *UserRepositoryImpl) Create(user entity.User, ctx context.Conte
 	).Scan(&createdUser.ID, &createdUser.Username, &createdUser.Email, &createdUser.Verified)
 
 	if err != nil {
+		if pqErr, ok := err.(*pq.Error); ok {
+			if pqErr.Code == "23505" {
+				return nil, domainerr.ErrEmailExists
+			}
+		}
 		return nil, domainerr.ErrInternal
 	}
 
@@ -84,17 +90,21 @@ func (repository *UserRepositoryImpl) Create(user entity.User, ctx context.Conte
 }
 
 func (repository *UserRepositoryImpl) VerifyUser(userId string, ctx context.Context) error {
-	query := "UPDATE users SET verified = TRUE WHERE id = $1"
+	query := "UPDATE users SET verified = TRUE WHERE id = $1 AND verified = FALSE"
 	res, err := repository.DB.ExecContext(ctx, query, userId)
 	if err != nil {
 		return domainerr.ErrInternal
 	}
 
-	rows, _ := res.RowsAffected()
-	if rows == 0 {
-		return domainerr.ErrUserNotFound
+	rows, err := res.RowsAffected()
+	if err != nil {
+		return domainerr.ErrInternal
 	}
 
+	fmt.Printf("Rows affected: %d\n", rows) // Add this
+	if rows == 0 {
+		return domainerr.ErrVerified
+	}
 	return nil
 }
 

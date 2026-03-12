@@ -38,7 +38,7 @@ func (handler *WatchlistHandlerImpl) GetWatchlist(c *fiber.Ctx) error {
 
 	res, err := handler.Service.GetWatchlist(c.Context(), userId)
 	if err != nil {
-		return c.Status(MapErrorToHTTPStatus(err)).JSON(response.FailedResponse{
+		return c.Status(MapWatchlistErrorToHTTPStatus(err)).JSON(response.FailedResponse{
 			Message: err.Error(),
 		})
 	}
@@ -69,7 +69,7 @@ func (handler *WatchlistHandlerImpl) AddWatchlist(c *fiber.Ctx) error {
 
 	res, err := handler.Service.AddToWatchlist(c.Context(), userId, req.Stock)
 	if err != nil {
-		return c.Status(MapErrorToHTTPStatus(err)).JSON(response.FailedResponse{
+		return c.Status(MapWatchlistErrorToHTTPStatus(err)).JSON(response.FailedResponse{
 			Message: err.Error(),
 		})
 	}
@@ -89,7 +89,7 @@ func (handler *WatchlistHandlerImpl) RemoveWatchlist(c *fiber.Ctx) error {
 
 	res, err := handler.Service.RemoveFromWatchlist(c.Context(), userId, stock)
 	if err != nil {
-		return c.Status(MapErrorToHTTPStatus(err)).JSON(response.FailedResponse{
+		return c.Status(MapWatchlistErrorToHTTPStatus(err)).JSON(response.FailedResponse{
 			Message: err.Error(),
 		})
 	}

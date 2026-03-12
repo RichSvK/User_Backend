@@ -10,7 +10,7 @@ import (
 
 func main() {
 	// Load local environment variables => not in production
-	config.LoadEnv()
+	config.LoadEnv(".env")
 
 	// Connect to database
 	db := database.DatabaseConfig()

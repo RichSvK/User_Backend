@@ -14,7 +14,7 @@ func MapErrorToHTTPStatus(err error) int {
 		return fiber.StatusUnauthorized
 	case domainerr.ErrNotVerified:
 		return fiber.StatusForbidden
-	case domainerr.ErrEmailExists:
+	case domainerr.ErrEmailExists, domainerr.ErrVerified:
 		return fiber.StatusConflict
 	case domainerr.ErrInvalidToken,
 		domainerr.ErrInvalidTokenClaims,
@@ -30,6 +30,17 @@ func MapFavoritesErrorToHTTPStatus(err error) int {
 	case domainerr.ErrFavoritesNotFound:
 		return fiber.StatusNotFound
 	case domainerr.ErrFavoritesDuplicate:
+		return fiber.StatusConflict
+	default:
+		return fiber.StatusInternalServerError
+	}
+}
+
+func MapWatchlistErrorToHTTPStatus(err error) int {
+	switch err {
+	case domainerr.ErrWatchlistNotFound:
+		return fiber.StatusNotFound
+	case domainerr.ErrWatchlistDuplicate:
 		return fiber.StatusConflict
 	default:
 		return fiber.StatusInternalServerError

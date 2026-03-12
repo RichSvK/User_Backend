@@ -2,6 +2,7 @@ package handler
 
 import (
 	"context"
+	"regexp"
 	"stock_backend/internal/helper"
 	"stock_backend/internal/model/request"
 	"stock_backend/internal/model/response"
@@ -97,7 +98,7 @@ func (handler *FavoriteHandlerImpl) RemoveFavorites(c *fiber.Ctx) error {
 	}
 
 	underwriterCode := c.Params("underwriter")
-	if underwriterCode == "" {
+	if !regexp.MustCompile(`^[A-Za-z]{2}$`).MatchString(underwriterCode){
 		return c.Status(fiber.StatusBadRequest).JSON(response.FailedResponse{
 			Message: "Underwriter code is required",
 		})

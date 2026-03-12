@@ -9,14 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-const userEmail = "richardsugiharto0@gmail.com"
-const password = "87654321"
-
 func TestAddFavorites(t *testing.T) {
-	ClearTable("favorites")
-	token, err := GetUserToken(userEmail, password)
-	assert.Nil(t, err)
-
 	httpHeader := map[string]string{
 		"Authorization": "Bearer " + token,
 		"Content-Type":  "application/json",
@@ -36,9 +29,6 @@ func TestAddFavorites(t *testing.T) {
 }
 
 func TestAddFavoritesDuplicates(t *testing.T) {
-	token, err := GetUserToken(userEmail, password)
-	assert.Nil(t, err)
-
 	httpHeader := map[string]string{
 		"Authorization": "Bearer " + token,
 		"Content-Type":  "application/json",
@@ -54,7 +44,7 @@ func TestAddFavoritesDuplicates(t *testing.T) {
 	assert.Nil(t, err)
 
 	assert.Equal(t, http.StatusConflict, statusCode)
-	assert.Equal(t, "Data already exists", result.Message)
+	assert.Equal(t, "data already exists", result.Message)
 }
 
 func TestAddFavoritesUnauthorized(t *testing.T) {
@@ -76,9 +66,6 @@ func TestAddFavoritesUnauthorized(t *testing.T) {
 }
 
 func TestGetFavorites(t *testing.T) {
-	token, err := GetUserToken(userEmail, password)
-	assert.Nil(t, err)
-
 	httpHeader := map[string]string{
 		"Authorization": "Bearer " + token,
 		"Accept":        "application/json",
@@ -106,10 +93,7 @@ func TestGetFavoritesUnauthorized(t *testing.T) {
 	assert.Equal(t, "Authorization header is required", result.Message)
 }
 
-func TestRemoveFavoriteResponses(t *testing.T) {
-	token, err := GetUserToken(userEmail, password)
-	assert.Nil(t, err)
-
+func TestRemoveFavorite(t *testing.T) {
 	httpHeader := map[string]string{
 		"Authorization": "Bearer " + token,
 		"Accept":        "application/json",
@@ -125,7 +109,7 @@ func TestRemoveFavoriteResponses(t *testing.T) {
 	assert.Equal(t, "Remove favorite success", result.Message)
 }
 
-func TestRemoveFavoriteResponsesUnauthorized(t *testing.T) {
+func TestRemoveFavoriteUnauthorized(t *testing.T) {
 	httpHeader := map[string]string{
 		"Accept": "application/json",
 	}
@@ -140,13 +124,25 @@ func TestRemoveFavoriteResponsesUnauthorized(t *testing.T) {
 	assert.Equal(t, "Authorization header is required", result.Message)
 }
 
-func TestRemoveFavoriteResponsesNotFound(t *testing.T) {
-	token, err := GetUserToken(userEmail, password)
-	assert.Nil(t, err)
-
+func TestRemoveFavoriteBadRequest(t *testing.T) {
 	httpHeader := map[string]string{
 		"Authorization": "Bearer " + token,
-		"Accept": "application/json",
+		"Accept":        "application/json",
+	}
+
+	url := "/api/v1/auth/favorites/A321"
+
+	result, statusCode, err := PerformRequest[*response.RemoveFavoriteResponse](nil, url, http.MethodDelete, httpHeader)
+	assert.Nil(t, err)
+
+	assert.Equal(t, http.StatusBadRequest, statusCode)
+	assert.Equal(t, "Underwriter code is required", result.Message)
+}
+
+func TestRemoveFavoriteNotFound(t *testing.T) {
+	httpHeader := map[string]string{
+		"Authorization": "Bearer " + token,
+		"Accept":        "application/json",
 	}
 
 	underwriterId := "KI"
@@ -156,5 +152,19 @@ func TestRemoveFavoriteResponsesNotFound(t *testing.T) {
 	assert.Nil(t, err)
 
 	assert.Equal(t, http.StatusNotFound, statusCode)
-	assert.Equal(t, "Favorites not found", result.Message)
+	assert.Equal(t, "favorites not found", result.Message)
+}
+
+func TestGetFavoritesNotFound(t *testing.T) {
+	httpHeader := map[string]string{
+		"Authorization": "Bearer " + token,
+		"Accept":        "application/json",
+	}
+
+	url := "/api/v1/auth/favorites"
+	result, statusCode, err := PerformRequest[*response.GetFavoritesResponse](nil, url, http.MethodGet, httpHeader)
+	assert.Nil(t, err)
+
+	assert.Equal(t, http.StatusNotFound, statusCode)
+	assert.Equal(t, "favorites not found", result.Message)
 }

@@ -3,6 +3,6 @@ package domainerr
 import "errors"
 
 var (
-	ErrFavoritesNotFound  = errors.New("Favorites not found")
-	ErrFavoritesDuplicate = errors.New("Data already exists")
+	ErrFavoritesNotFound  = errors.New("favorites not found")
+	ErrFavoritesDuplicate = errors.New("data already exists")
 )

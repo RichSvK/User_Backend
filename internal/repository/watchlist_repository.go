@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	"log"
 	"stock_backend/internal/model/domainerr"
+
+	"github.com/lib/pq"
 )
 
 type WatchlistRepository interface {
@@ -28,6 +30,11 @@ func (repository *WatchlistRepositoryImpl) AddWatchlist(ctx context.Context, use
 	_, err := repository.DB.ExecContext(ctx, query, userId, stock)
 
 	if err != nil {
+		if pqErr, ok := err.(*pq.Error); ok {
+			if pqErr.Code == "23505" {
+				return domainerr.ErrWatchlistDuplicate
+			}
+		}
 		return domainerr.ErrInternal
 	}
 

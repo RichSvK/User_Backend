@@ -2,11 +2,8 @@ package service
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log"
-	"net/smtp"
-	"os"
 	"stock_backend/internal/helper"
 	"stock_backend/internal/model/domainerr"
 	"stock_backend/internal/model/entity"
@@ -29,16 +26,16 @@ type UserService interface {
 }
 
 type UserServiceImpl struct {
-	Repository     repository.UserRepository
-	EmailSecretKey string
-	JwtSecret      string
+	Repository repository.UserRepository
+	JwtSecret  string
+	Smtp       smtpConfig
 }
 
-func NewUserService(repository repository.UserRepository, secretKey string, jwtSecret string) UserService {
+func NewUserService(repository repository.UserRepository, jwtSecret string, smtp smtpConfig) UserService {
 	return &UserServiceImpl{
-		Repository:     repository,
-		EmailSecretKey: secretKey,
-		JwtSecret:      jwtSecret,
+		Repository: repository,
+		JwtSecret:  jwtSecret,
+		Smtp:       smtp,
 	}
 }
 
@@ -98,10 +95,21 @@ func (service *UserServiceImpl) Register(request request.RegisterRequest, ctx co
 		return nil, err
 	}
 
+	token, err := helper.GenerateJWT(user.ID.String(), user.Email, user.Role, service.Smtp.Secret)
+	if err != nil {
+		return nil, err
+	}
+
+	verifyURL := fmt.Sprintf("http://%s:%s/api/v1/users/verify?token=%s", service.Smtp.AppHost, service.Smtp.AppPort, token)
+	htmlBody, err := renderVerificationEmail(verifyURL)
+	if err != nil {
+		return nil, err
+	}
+
 	// Run this code if email verification is required and SMTP server is configured
-	// if err := SendVerificationEmail(ctx, user); err != nil {
-	// 	log.Println("email failed:", err)
-	// }
+	if err := service.Smtp.sendHTML(ctx, user.Email, "Verify your Stock App account", htmlBody); err != nil {
+		log.Println("email failed:", err)
+	}
 
 	response := &response.RegisterResponse{
 		Message: "Registration successful",
@@ -111,7 +119,7 @@ func (service *UserServiceImpl) Register(request request.RegisterRequest, ctx co
 }
 
 func (service *UserServiceImpl) VerifyUser(tokenString string, ctx context.Context) (*response.VerifyResponse, error) {
-	token, err := helper.ValidateJWT(tokenString, service.EmailSecretKey)
+	token, err := helper.ValidateJWT(tokenString, service.Smtp.Secret)
 	if err != nil {
 		return nil, domainerr.ErrInvalidToken
 	}
@@ -173,99 +181,4 @@ func (service *UserServiceImpl) GetProfile(userId string, ctx context.Context) (
 		Email:    user.Email,
 	}
 	return response, nil
-}
-
-func SendVerificationEmail(ctx context.Context, user entity.User) error {
-	smtpUser := os.Getenv("SMTP_EMAIL")
-	smtpPass := os.Getenv("SMTP_PASSWORD")
-	smtpHost := os.Getenv("SMTP_HOST")
-	smtpPort := os.Getenv("SMTP_PORT")
-	appHost := os.Getenv("APP_HOST")
-	appPort := os.Getenv("APP_PORT")
-	emailSecret := os.Getenv("EMAIL_SECRET_KEY")
-
-	if smtpUser == "" || smtpPass == "" || smtpHost == "" || smtpPort == "" || appHost == "" || appPort == "" {
-		return errors.New("missing smtp configuration")
-	}
-
-	auth := smtp.PlainAuth("", smtpUser, smtpPass, smtpHost)
-
-	token, err := helper.GenerateJWT(user.ID.String(), user.Email, user.Role, emailSecret)
-	if err != nil {
-		return err
-	}
-
-	verifyURL := fmt.Sprintf("http://%s:%s/api/v1/users/verify?token=%s", appHost, appPort, token)
-	subject := "Verify your Stock App account"
-
-	htmlBody := fmt.Sprintf(`
-	<!DOCTYPE html>
-	<html>
-	<head>
-		<meta charset="UTF-8">
-	</head>
-	<body style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px;">
-		<table width="100%%" cellpadding="0" cellspacing="0">
-			<tr>
-				<td align="center">
-					<table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; padding: 30px; border-radius: 8px;">
-						<tr>
-							<td align="center">
-								<h2>Verify your email address</h2>
-								<p>Thanks for signing up! Please confirm your email address by clicking the button below.</p>
-								<a href="%s"
-								style="
-									display: inline-block;
-									padding: 14px 24px;
-									margin-top: 20px;
-									background-color: #007bff;
-									color: #ffffff;
-									text-decoration: none;
-									border-radius: 6px;
-									font-weight: bold;
-								">
-									Verify Account
-								</a>
-								<p style="margin-top: 30px; font-size: 12px; color: #777;">
-									If you didn’t create an account, you can safely ignore this email.
-								</p>
-							</td>
-						</tr>
-					</table>
-				</td>
-			</tr>
-		</table>
-	</body>
-	</html>
-	`, verifyURL)
-
-	msg := []byte(
-		"From: " + smtpUser + "\r\n" +
-			"To: " + user.Email + "\r\n" +
-			"Subject: " + subject + "\r\n" +
-			"MIME-Version: 1.0\r\n" +
-			"Content-Type: text/html; charset=UTF-8\r\n\r\n" +
-			htmlBody,
-	)
-
-	// respect context cancellation
-	done := make(chan error, 1)
-	go func() {
-		done <- smtp.SendMail(
-			smtpHost+":"+smtpPort,
-			auth,
-			smtpUser,
-			[]string{user.Email},
-			msg,
-		)
-	}()
-
-	select {
-	case <-ctx.Done():
-		log.Println("Error")
-		return ctx.Err()
-	case err := <-done:
-		log.Println("Finished Email Send")
-		return err
-	}
 }

@@ -50,7 +50,6 @@ func (service *WatchlistServiceImpl) RemoveFromWatchlist(ctx context.Context, us
 
 func (service *WatchlistServiceImpl) GetWatchlist(ctx context.Context, userId string) (*response.GetWatchlistResponse, error) {
 	watchlist, err := service.Repository.GetWatchlistByUserID(ctx, userId)
-
 	if err != nil {
 		return nil, err
 	}

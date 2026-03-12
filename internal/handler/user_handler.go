@@ -170,13 +170,6 @@ func (handler *UserHandlerImpl) DeleteUser(c *fiber.Ctx) error {
 		})
 	}
 
-	userId, ok := helper.GetUserID(c)
-	if !ok || userId != deleteRequest.UserId {
-		return c.Status(fiber.StatusBadRequest).JSON(response.FailedResponse{
-			Message: "User ID is required",
-		})
-	}
-
 	res, err := handler.UserService.DeleteUser(deleteRequest.UserId, ctx)
 	if err != nil {
 		return c.Status(MapErrorToHTTPStatus(err)).JSON(response.FailedResponse{

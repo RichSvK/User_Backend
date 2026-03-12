@@ -20,7 +20,7 @@ func RegisterFavoriteRoutes(router fiber.Router, db *sql.DB, redis_db *redis.Cli
 	favoriteService := service.NewFavoriteService(favoriteRepository)
 	favoriteHandler := handler.NewFavoriteHandler(favoriteService, validator)
 
-	favoriteRouting.Use(middleware.JWTMiddleware(os.Getenv("JWT_SECRET")))
+	favoriteRouting.Use(middleware.JWTMiddleware(os.Getenv("JWT_SECRET")), middleware.UserMiddleware())
 	favoriteRouting.Get("", favoriteHandler.GetFavorites)
 	favoriteRouting.Post("", favoriteHandler.AddFavorites)
 	favoriteRouting.Delete("/:underwriter", favoriteHandler.RemoveFavorites)

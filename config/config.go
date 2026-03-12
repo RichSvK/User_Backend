@@ -4,6 +4,6 @@ import (
 	"github.com/joho/godotenv"
 )
 
-func LoadEnv() {
-	_ = godotenv.Load()
+func LoadEnv(filename string) {
+	_ = godotenv.Load(filename)
 }

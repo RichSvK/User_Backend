@@ -2,6 +2,7 @@ package router
 
 import (
 	"database/sql"
+	"log"
 	"os"
 	"stock_backend/internal/handler"
 	"stock_backend/internal/middleware"
@@ -17,10 +18,16 @@ func RegisterUserRoutes(router fiber.Router, db *sql.DB, redis_db *redis.Client)
 	validator := validator.New()
 	jwtSecret := os.Getenv("JWT_SECRET")
 	userRepository := repository.NewUserRepository(db, redis_db)
-	userService := service.NewUserService(userRepository, os.Getenv("EMAIL_SECRET_KEY"), jwtSecret)
+
+	smtp, err := service.LoadSMTPConfig()
+	if err != nil {
+		log.Println("failed to load smtp")
+	}
+	userService := service.NewUserService(userRepository, jwtSecret, smtp)
 	userHandler := handler.NewUserHandler(userService, validator)
 
 	userRouting := router.Group("/api/v1/users")
+	userRouting.Use(middleware.LoggedOutMiddleware())
 	userRouting.Post("/login", userHandler.Login)
 	userRouting.Post("/register", userHandler.Register)
 	userRouting.Get("/verify", userHandler.VerifyUser)
@@ -29,5 +36,7 @@ func RegisterUserRoutes(router fiber.Router, db *sql.DB, redis_db *redis.Client)
 	authRouting.Use(middleware.JWTMiddleware(jwtSecret))
 	authRouting.Get("/profile", userHandler.GetUserInfo)
 	authRouting.Post("/logout", userHandler.Logout)
-	authRouting.Delete("/delete", userHandler.DeleteUser)
+
+	adminRouting := authRouting.Use(middleware.AdminMiddleware())
+	adminRouting.Delete("", userHandler.DeleteUser)
 }

@@ -2,6 +2,7 @@ package router
 
 import (
 	"database/sql"
+	"stock_backend/internal/middleware"
 	"time"
 
 	"github.com/goccy/go-json"
@@ -18,7 +19,7 @@ func SetupRouter(db *sql.DB, redisDB *redis.Client) *fiber.App {
 		WriteTimeout:          5 * time.Second,
 		EnablePrintRoutes:     true,            // Print routes on startup
 		BodyLimit:             4 * 1024 * 1024, // 4 MB request body limit
-		Prefork:               true,           // Set to true to enable preforking
+		Prefork:               false,           // Set to true to enable preforking
 		CaseSensitive:         false,
 		DisableStartupMessage: false,          // Disable Startup Message if needed
 		JSONEncoder:           json.Marshal,   // Custom JSON Encoder
@@ -29,6 +30,8 @@ func SetupRouter(db *sql.DB, redisDB *redis.Client) *fiber.App {
 
 	// Middleware Logger
 	app.Use(logger.New())
+
+	middleware.CorsMiddleware(app)
 
 	RegisterUserRoutes(app, db, redisDB)
 	RegisterWatchlistRoutes(app, db)

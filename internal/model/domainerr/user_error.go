@@ -8,6 +8,7 @@ var (
 	ErrNotVerified   = errors.New("email not verified")
 	ErrEmailExists   = errors.New("email already registered")
 	ErrInternal      = errors.New("internal server error")
+	ErrVerified      = errors.New("user is already verified")
 
 	// JWT related errors
 	ErrInvalidToken       = errors.New("invalid token")
