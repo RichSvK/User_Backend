@@ -2,7 +2,8 @@ package middleware
 
 import (
 	"os"
-	"stock_backend/internal/model/response"
+	"stock_backend/internal/handler"
+	"stock_backend/internal/model/domainerr"
 	"strings"
 	"time"
 
@@ -45,9 +46,7 @@ func LoggedOutMiddleware() fiber.Handler {
 		// Check for expired date JWT
 		exp, ok := claims["exp"].(float64)
 		if ok && int64(exp) > time.Now().Unix() {
-			return c.Status(fiber.StatusBadRequest).JSON(response.FailedResponse{
-				Message: "You are already logged in",
-			})
+			return handler.ResponseErrorJSON(c, fiber.StatusBadRequest, domainerr.ErrUserLoggedIn.Error())
 		}
 
 		return c.Next()

@@ -1,7 +1,8 @@
 package middleware
 
 import (
-	"net/http"
+	"stock_backend/internal/handler"
+	"stock_backend/internal/model/domainerr"
 	"strings"
 	"time"
 
@@ -15,16 +16,12 @@ func JWTMiddleware(secretKey string) fiber.Handler {
 
 		// If the token is empty, allow the request to proceed
 		if auth == "" {
-			return c.Status(http.StatusUnauthorized).JSON(fiber.Map{
-				"message": "Authorization header is required",
-			})
+			return handler.ResponseErrorJSON(c, fiber.StatusUnauthorized, domainerr.ErrAuthorizationHeaderRequired.Error())
 		}
 
 		parts := strings.SplitN(auth, " ", 2)
 		if len(parts) != 2 || parts[0] != "Bearer" {
-			return c.Status(http.StatusUnauthorized).JSON(fiber.Map{
-				"message": "Unauthorized",
-			})
+			return handler.ResponseErrorJSON(c, fiber.StatusUnauthorized, domainerr.ErrUnauthorized.Error())
 		}
 		tokenStr := parts[1]
 
@@ -32,17 +29,13 @@ func JWTMiddleware(secretKey string) fiber.Handler {
 		token, err := jwt.Parse(tokenStr, func(t *jwt.Token) (interface{}, error) {
 			// Check if the signing method is HMAC
 			if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
-				return nil, c.Status(http.StatusUnauthorized).JSON(fiber.Map{
-					"message": "Unauthorized",
-				})
+				return nil, handler.ResponseErrorJSON(c, fiber.StatusUnauthorized, domainerr.ErrUnauthorized.Error())
 			}
 			return []byte(secretKey), nil
 		})
 
 		if err != nil || !token.Valid {
-			return c.Status(http.StatusUnauthorized).JSON(fiber.Map{
-				"message": "Unauthorized",
-			})
+			return handler.ResponseErrorJSON(c, fiber.StatusUnauthorized, domainerr.ErrUnauthorized.Error())
 		}
 
 		claims := token.Claims.(jwt.MapClaims)
@@ -50,24 +43,18 @@ func JWTMiddleware(secretKey string) fiber.Handler {
 		// Check for expired date JWT
 		exp, ok := claims["exp"].(float64)
 		if !ok || int64(exp) < time.Now().Unix() {
-			return c.Status(http.StatusUnauthorized).JSON(fiber.Map{
-				"message": "Token has expired",
-			})
+			return handler.ResponseErrorJSON(c, fiber.StatusUnauthorized, domainerr.ErrTokenExpired.Error())
 		}
 
 		sub, ok := claims["sub"].(string)
 		if !ok {
-			return c.Status(http.StatusUnauthorized).JSON(fiber.Map{
-				"message": "Invalid token subject",
-			})
+			return handler.ResponseErrorJSON(c, fiber.StatusUnauthorized, domainerr.ErrInvalidTokenClaims.Error())
 		}
 		c.Locals("userId", sub)
 
 		role, ok := claims["role"].(string)
 		if !ok {
-			return c.Status(http.StatusUnauthorized).JSON(fiber.Map{
-				"message": "Invalid token role",
-			})
+			return handler.ResponseErrorJSON(c, fiber.StatusUnauthorized, domainerr.ErrInvalidTokenClaims.Error())
 		}
 		c.Locals("role", role)
 

@@ -2,6 +2,7 @@ package test
 
 import (
 	"net/http"
+	"stock_backend/internal/model/domainerr"
 	"stock_backend/internal/model/request"
 	"stock_backend/internal/model/response"
 	"testing"
@@ -44,7 +45,7 @@ func TestUserRoleUnauthorized(t *testing.T) {
 	assert.Nil(t, err)
 
 	assert.Equal(t, http.StatusForbidden, statusCode)
-	assert.Equal(t, "Unauthorized access", result.Message)
+	assert.Equal(t, domainerr.ErrUnauthorizedAccess.Error(), result.Message)
 }
 
 func TestAdminUnauthorized(t *testing.T) {
@@ -58,7 +59,7 @@ func TestAdminUnauthorized(t *testing.T) {
 	assert.Nil(t, err)
 
 	assert.Equal(t, http.StatusForbidden, statusCode)
-	assert.Equal(t, "Unauthorized access", result.Message)
+	assert.Equal(t, domainerr.ErrUnauthorizedAccess.Error(), result.Message)
 }
 
 func TestLoggedOutFailed(t *testing.T) {
@@ -68,9 +69,9 @@ func TestLoggedOutFailed(t *testing.T) {
 	}
 
 	url := "/api/v1/users/login"
-	result, statusCode, err := PerformRequest[*response.LoginResponse](nil, url, http.MethodDelete, httpHeader)
+	result, statusCode, err := PerformRequest[*response.FailedResponse](nil, url, http.MethodDelete, httpHeader)
 	assert.Nil(t, err)
 
 	assert.Equal(t, http.StatusBadRequest, statusCode)
-	assert.Equal(t, "You are already logged in", result.Message)
+	assert.Equal(t, domainerr.ErrUserLoggedIn.Error(), result.Message)
 }

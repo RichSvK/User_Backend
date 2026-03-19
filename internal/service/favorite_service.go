@@ -3,8 +3,8 @@ package service
 import (
 	"context"
 	"fmt"
+	"stock_backend/internal/entity"
 	"stock_backend/internal/model/domainerr"
-	"stock_backend/internal/model/entity"
 	"stock_backend/internal/model/response"
 	"stock_backend/internal/repository"
 )

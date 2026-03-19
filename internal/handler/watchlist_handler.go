@@ -2,8 +2,8 @@ package handler
 
 import (
 	"stock_backend/internal/helper"
+	"stock_backend/internal/model/domainerr"
 	"stock_backend/internal/model/request"
-	"stock_backend/internal/model/response"
 	"stock_backend/internal/service"
 
 	"github.com/go-playground/validator/v10"
@@ -31,16 +31,12 @@ func NewWatchlistHandler(service service.WatchlistService, validator *validator.
 func (handler *WatchlistHandlerImpl) GetWatchlist(c *fiber.Ctx) error {
 	userId, ok := helper.GetUserID(c)
 	if !ok {
-		return c.Status(fiber.StatusBadRequest).JSON(response.FailedResponse{
-			Message: "User ID is required",
-		})
+		return ResponseErrorJSON(c, fiber.StatusBadRequest, domainerr.ErrFavoritesUserIdRequired.Error())
 	}
 
 	res, err := handler.Service.GetWatchlist(c.Context(), userId)
 	if err != nil {
-		return c.Status(MapWatchlistErrorToHTTPStatus(err)).JSON(response.FailedResponse{
-			Message: err.Error(),
-		})
+		return ResponseErrorJSON(c, MapWatchlistErrorToHTTPStatus(err), err.Error())
 	}
 
 	return c.Status(fiber.StatusOK).JSON(res)
@@ -49,29 +45,21 @@ func (handler *WatchlistHandlerImpl) GetWatchlist(c *fiber.Ctx) error {
 func (handler *WatchlistHandlerImpl) AddWatchlist(c *fiber.Ctx) error {
 	userId, ok := helper.GetUserID(c)
 	if !ok {
-		return c.Status(fiber.StatusBadRequest).JSON(response.FailedResponse{
-			Message: "User ID is required",
-		})
+		return ResponseErrorJSON(c, fiber.StatusBadRequest, domainerr.ErrFavoritesUserIdRequired.Error())
 	}
 
 	var req request.AddWatchlistRequest
 	if err := c.BodyParser(&req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(response.FailedResponse{
-			Message: "Invalid request",
-		})
+		return ResponseErrorJSON(c, fiber.StatusBadRequest, domainerr.ErrInvalidRequestBody.Error())
 	}
 
-	if req.Stock == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(response.FailedResponse{
-			Message: "Stock is required",
-		})
+	if err := handler.Validator.Struct(req); err != nil {
+		return ResponseErrorJSON(c, fiber.StatusBadRequest, helper.ValidationError(err))
 	}
 
 	res, err := handler.Service.AddToWatchlist(c.Context(), userId, req.Stock)
 	if err != nil {
-		return c.Status(MapWatchlistErrorToHTTPStatus(err)).JSON(response.FailedResponse{
-			Message: err.Error(),
-		})
+		return ResponseErrorJSON(c, MapWatchlistErrorToHTTPStatus(err), err.Error())
 	}
 
 	return c.Status(fiber.StatusCreated).JSON(res)
@@ -82,16 +70,12 @@ func (handler *WatchlistHandlerImpl) RemoveWatchlist(c *fiber.Ctx) error {
 
 	userId, ok := helper.GetUserID(c)
 	if !ok {
-		return c.Status(fiber.StatusBadRequest).JSON(response.FailedResponse{
-			Message: "User ID is required",
-		})
+		return ResponseErrorJSON(c, fiber.StatusBadRequest, domainerr.ErrFavoritesUserIdRequired.Error())
 	}
 
 	res, err := handler.Service.RemoveFromWatchlist(c.Context(), userId, stock)
 	if err != nil {
-		return c.Status(MapWatchlistErrorToHTTPStatus(err)).JSON(response.FailedResponse{
-			Message: err.Error(),
-		})
+		return ResponseErrorJSON(c, MapWatchlistErrorToHTTPStatus(err), err.Error())
 	}
 
 	return c.Status(fiber.StatusOK).JSON(res)

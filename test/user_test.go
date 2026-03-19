@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 	"stock_backend/internal/helper"
+	"stock_backend/internal/model/domainerr"
 	"stock_backend/internal/model/request"
 	"stock_backend/internal/model/response"
 	"testing"
@@ -48,7 +49,7 @@ func TestRegisterBadRequest(t *testing.T) {
 	assert.Nil(t, err)
 
 	assert.Equal(t, http.StatusBadRequest, statusCode)
-	assert.Equal(t, "Invalid request", result.Message)
+	assert.Equal(t, domainerr.ErrInvalidRequestBody.Error(), result.Message)
 }
 
 func TestRegisterValidationFailed(t *testing.T) {
@@ -68,7 +69,7 @@ func TestRegisterValidationFailed(t *testing.T) {
 	assert.Nil(t, err)
 
 	assert.Equal(t, http.StatusBadRequest, statusCode)
-	assert.Equal(t, "Validation failed", result.Message)
+	assert.Equal(t, "Email is required", result.Message)
 }
 
 func TestRegisterDuplicate(t *testing.T) {
@@ -84,11 +85,11 @@ func TestRegisterDuplicate(t *testing.T) {
 	}
 
 	url := "/api/v1/users/register"
-	result, statusCode, err := PerformRequest[*response.RegisterResponse](requestBody, url, http.MethodPost, httpHeader)
+	result, statusCode, err := PerformRequest[*response.FailedResponse](requestBody, url, http.MethodPost, httpHeader)
 	assert.Nil(t, err)
 
 	assert.Equal(t, http.StatusConflict, statusCode)
-	assert.Equal(t, "email already registered", result.Message)
+	assert.Equal(t, domainerr.ErrEmailExists.Error(), result.Message)
 }
 
 func TestLogin(t *testing.T) {
@@ -127,7 +128,7 @@ func TestLoginWrongPassword(t *testing.T) {
 	assert.Nil(t, err)
 
 	assert.Equal(t, http.StatusUnauthorized, statusCode)
-	assert.Equal(t, "wrong password", result.Message)
+	assert.Equal(t, domainerr.ErrWrongPassword.Error(), result.Message)
 }
 
 func TestLoginBadRequest(t *testing.T) {
@@ -146,7 +147,7 @@ func TestLoginBadRequest(t *testing.T) {
 	assert.Nil(t, err)
 
 	assert.Equal(t, http.StatusBadRequest, statusCode)
-	assert.Equal(t, "Invalid request", result.Message)
+	assert.Equal(t, domainerr.ErrInvalidRequestBody.Error(), result.Message)
 }
 
 func TestLoginMinPassword(t *testing.T) {
@@ -165,7 +166,7 @@ func TestLoginMinPassword(t *testing.T) {
 	assert.Nil(t, err)
 
 	assert.Equal(t, http.StatusBadRequest, statusCode)
-	assert.Equal(t, "Password must be at least 6 characters", result.Message)
+	assert.Equal(t, "Password must be greater than or equal to 6", result.Message)
 }
 
 func TestLoginBadRequiredField(t *testing.T) {
@@ -221,7 +222,7 @@ func TestLoginNotFound(t *testing.T) {
 	assert.Nil(t, err)
 
 	assert.Equal(t, http.StatusNotFound, statusCode)
-	assert.Equal(t, "user not found", result.Message)
+	assert.Equal(t, domainerr.ErrUserNotFound.Error(), result.Message)
 }
 
 func TestLogoutSuccess(t *testing.T) {
@@ -264,7 +265,7 @@ func TestLogoutFailed(t *testing.T) {
 	assert.Nil(t, err)
 
 	assert.Equal(t, http.StatusUnauthorized, statusCode)
-	assert.Equal(t, "Authorization header is required", result.Message)
+	assert.Equal(t, domainerr.ErrAuthorizationHeaderRequired.Error(), result.Message)
 }
 
 func TestGetProfile(t *testing.T) {
@@ -308,7 +309,7 @@ func TestGetProfileUnauthorized(t *testing.T) {
 	assert.Nil(t, err)
 
 	assert.Equal(t, http.StatusUnauthorized, statusCode)
-	assert.Equal(t, "Authorization header is required", result.Message)
+	assert.Equal(t, domainerr.ErrAuthorizationHeaderRequired.Error(), result.Message)
 }
 
 func TestVerifyUserTokenEmpty(t *testing.T) {
@@ -321,7 +322,7 @@ func TestVerifyUserTokenEmpty(t *testing.T) {
 	assert.Nil(t, err)
 
 	assert.Equal(t, http.StatusBadRequest, statusCode)
-	assert.Equal(t, "Token is required", result.Message)
+	assert.Equal(t, domainerr.ErrEmptyToken.Error(), result.Message)
 }
 
 func TestVerifyUserInvalidToken(t *testing.T) {
@@ -334,7 +335,7 @@ func TestVerifyUserInvalidToken(t *testing.T) {
 	assert.Nil(t, err)
 
 	assert.Equal(t, http.StatusUnauthorized, statusCode)
-	assert.Equal(t, "invalid token", result.Message)
+	assert.Equal(t, domainerr.ErrInvalidToken.Error(), result.Message)
 }
 
 func TestVerifyUser(t *testing.T) {
@@ -388,7 +389,7 @@ func TestVerifyUserVerified(t *testing.T) {
 	assert.Nil(t, err)
 
 	assert.Equal(t, http.StatusConflict, statusCode)
-	assert.Equal(t, "user is already verified", result.Message)
+	assert.Equal(t, domainerr.ErrVerified.Error(), result.Message)
 }
 
 func TestDeleteUser(t *testing.T) {
@@ -421,5 +422,5 @@ func TestDeleteUser(t *testing.T) {
 	assert.Nil(t, err)
 
 	assert.Equal(t, http.StatusNotFound, statusCode)
-	assert.Equal(t, "user not found", failedRes.Message)
+	assert.Equal(t, domainerr.ErrUserNotFound.Error(), failedRes.Message)
 }

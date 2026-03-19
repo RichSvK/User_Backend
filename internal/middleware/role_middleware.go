@@ -1,7 +1,8 @@
 package middleware
 
 import (
-	"stock_backend/internal/model/response"
+	"stock_backend/internal/handler"
+	"stock_backend/internal/model/domainerr"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -11,15 +12,11 @@ func AdminMiddleware() fiber.Handler {
 		// Check if the user is logged in
 		role, ok := c.Locals("role").(string)
 		if !ok {
-			return c.Status(fiber.StatusInternalServerError).JSON(response.FailedResponse{
-				Message: "Internal server error",
-			})
+			return handler.ResponseErrorJSON(c, fiber.StatusInternalServerError, domainerr.ErrInternal.Error())
 		}
 
 		if role != "admin" {
-			return c.Status(fiber.StatusForbidden).JSON(response.FailedResponse{
-				Message: "Unauthorized access",
-			})
+			return handler.ResponseErrorJSON(c, fiber.StatusForbidden, domainerr.ErrUnauthorizedAccess.Error())
 		}
 		return c.Next()
 	}
@@ -30,15 +27,11 @@ func UserMiddleware() fiber.Handler {
 		// Check if the user is logged in
 		role, ok := c.Locals("role").(string)
 		if !ok {
-			return c.Status(fiber.StatusInternalServerError).JSON(response.FailedResponse{
-				Message: "Internal server error",
-			})
+			return handler.ResponseErrorJSON(c, fiber.StatusInternalServerError, domainerr.ErrInternal.Error())
 		}
 
 		if role != "user" {
-			return c.Status(fiber.StatusForbidden).JSON(response.FailedResponse{
-				Message: "Unauthorized access",
-			})
+			return handler.ResponseErrorJSON(c, fiber.StatusForbidden, domainerr.ErrUnauthorizedAccess.Error())
 		}
 
 		return c.Next()

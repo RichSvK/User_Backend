@@ -2,6 +2,7 @@ package test
 
 import (
 	"net/http"
+	"stock_backend/internal/model/domainerr"
 	"stock_backend/internal/model/request"
 	"stock_backend/internal/model/response"
 	"testing"
@@ -43,7 +44,7 @@ func TestAddWatchListUnauthorized(t *testing.T) {
 	assert.Nil(t, err)
 
 	assert.Equal(t, http.StatusUnauthorized, statusCode)
-	assert.Equal(t, "Authorization header is required", result.Message)
+	assert.Equal(t, domainerr.ErrAuthorizationHeaderRequired.Error(), result.Message)
 }
 
 func TestAddWatchlistDuplicate(t *testing.T) {
@@ -62,7 +63,7 @@ func TestAddWatchlistDuplicate(t *testing.T) {
 	assert.Nil(t, err)
 
 	assert.Equal(t, http.StatusConflict, statusCode)
-	assert.Equal(t, "duplicate stock in watchlist", result.Message)
+	assert.Equal(t, domainerr.ErrWatchlistDuplicate.Error(), result.Message)
 }
 
 func TestAddWatchlistBadRequest(t *testing.T) {
@@ -76,7 +77,7 @@ func TestAddWatchlistBadRequest(t *testing.T) {
 	assert.Nil(t, err)
 
 	assert.Equal(t, http.StatusBadRequest, statusCode)
-	assert.Equal(t, "Invalid request", result.Message)
+	assert.Equal(t, domainerr.ErrInvalidRequestBody.Error(), result.Message)
 }
 
 func TestGetWatchlist(t *testing.T) {
@@ -104,7 +105,7 @@ func TestGetWatchlistUnauthorized(t *testing.T) {
 	assert.Nil(t, err)
 
 	assert.Equal(t, http.StatusUnauthorized, statusCode)
-	assert.Equal(t, "Authorization header is required", result.Message)
+	assert.Equal(t, domainerr.ErrAuthorizationHeaderRequired.Error(), result.Message)
 }
 
 func TestRemoveFromWatchlist(t *testing.T) {
@@ -133,7 +134,7 @@ func TestRemoveFromWatchlistUnauthorized(t *testing.T) {
 	assert.Nil(t, err)
 
 	assert.Equal(t, http.StatusUnauthorized, statusCode)
-	assert.Equal(t, "Authorization header is required", result.Message)
+	assert.Equal(t, domainerr.ErrAuthorizationHeaderRequired.Error(), result.Message)
 }
 
 func TestRemoveFromWatchlistNotFound(t *testing.T) {
@@ -144,11 +145,11 @@ func TestRemoveFromWatchlistNotFound(t *testing.T) {
 
 	stock := "NOBU"
 	url := "/api/v1/auth/watchlist/" + stock
-	result, statusCode, err := PerformRequest[*response.RemoveWatchlistResponse](nil, url, http.MethodDelete, httpHeader)
+	result, statusCode, err := PerformRequest[*response.FailedResponse](nil, url, http.MethodDelete, httpHeader)
 	assert.Nil(t, err)
 
 	assert.Equal(t, http.StatusNotFound, statusCode)
-	assert.Equal(t, "watchlist not found", result.Message)
+	assert.Equal(t, domainerr.ErrWatchlistNotFound.Error(), result.Message)
 }
 
 func TestGetWatchlistNotFound(t *testing.T) {
@@ -162,5 +163,5 @@ func TestGetWatchlistNotFound(t *testing.T) {
 	assert.Nil(t, err)
 
 	assert.Equal(t, http.StatusNotFound, statusCode)
-	assert.Equal(t, "watchlist not found", result.Message)
+	assert.Equal(t, domainerr.ErrWatchlistNotFound.Error(), result.Message)
 }

@@ -9,11 +9,10 @@ import (
 func GenerateJWT(userID string, email string, role string, secretKey string) (string, error) {
 	jwtSecret := []byte(secretKey)
 	claims := jwt.MapClaims{
-		"sub":   userID,
-		"email": email,
-		"role":  role,
-		"exp":   time.Now().Add(time.Minute * 60).Unix(),
-		"iat":   time.Now().Unix(),
+		"sub":  userID,
+		"role": role,
+		"exp":  time.Now().Add(time.Minute * 60).Unix(),
+		"iat":  time.Now().Unix(),
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
@@ -32,7 +31,7 @@ func ValidateJWT(tokenString string, secretKey string) (*jwt.Token, error) {
 	})
 
 	if err != nil {
-		return nil, err // includes expired, invalid signature, malformed
+		return nil, err
 	}
 
 	if !token.Valid {

@@ -17,22 +17,23 @@ func SetupRouter(db *sql.DB, redisDB *redis.Client) *fiber.App {
 		IdleTimeout:           5 * time.Second,
 		ReadTimeout:           5 * time.Second,
 		WriteTimeout:          5 * time.Second,
-		EnablePrintRoutes:     true,            // Print routes on startup
-		BodyLimit:             4 * 1024 * 1024, // 4 MB request body limit
-		Prefork:               false,           // Set to true to enable preforking
+		EnablePrintRoutes:     true,
+		BodyLimit:             4 * 1024 * 1024,
+		Prefork:               false, // Set to true to enable preforking
 		CaseSensitive:         false,
-		DisableStartupMessage: false,          // Disable Startup Message if needed
-		JSONEncoder:           json.Marshal,   // Custom JSON Encoder
-		JSONDecoder:           json.Unmarshal, // Custom JSON Decoder
-		Views:                 nil,            // Set to nil if not using views
+		DisableStartupMessage: false,
+		JSONEncoder:           json.Marshal,
+		JSONDecoder:           json.Unmarshal,
+		Views:                 nil,
 		StrictRouting:         true,
 	})
 
-	// Middleware Logger
+	// Middleware setup
 	app.Use(logger.New())
-
 	middleware.CorsMiddleware(app)
+	// middleware.RateLimitMiddleware(app)
 
+	// Register Route
 	RegisterUserRoutes(app, db, redisDB)
 	RegisterWatchlistRoutes(app, db)
 	RegisterFavoriteRoutes(app, db, redisDB)

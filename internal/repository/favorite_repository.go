@@ -6,8 +6,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"stock_backend/internal/entity"
 	"stock_backend/internal/model/domainerr"
-	"stock_backend/internal/model/entity"
 	"time"
 
 	"github.com/lib/pq"

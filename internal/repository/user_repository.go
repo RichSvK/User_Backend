@@ -5,8 +5,8 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"stock_backend/internal/entity"
 	"stock_backend/internal/model/domainerr"
-	"stock_backend/internal/model/entity"
 
 	"github.com/lib/pq"
 	"github.com/redis/go-redis/v9"

@@ -2,6 +2,7 @@ package test
 
 import (
 	"net/http"
+	"stock_backend/internal/model/domainerr"
 	"stock_backend/internal/model/request"
 	"stock_backend/internal/model/response"
 	"testing"
@@ -40,11 +41,11 @@ func TestAddFavoritesDuplicates(t *testing.T) {
 	}
 
 	url := "/api/v1/auth/favorites"
-	result, statusCode, err := PerformRequest[*response.AddFavoriteResponse](requestBody, url, http.MethodPost, httpHeader)
+	result, statusCode, err := PerformRequest[*response.FailedResponse](requestBody, url, http.MethodPost, httpHeader)
 	assert.Nil(t, err)
 
 	assert.Equal(t, http.StatusConflict, statusCode)
-	assert.Equal(t, "data already exists", result.Message)
+	assert.Equal(t, domainerr.ErrFavoritesDuplicate.Error(), result.Message)
 }
 
 func TestAddFavoritesUnauthorized(t *testing.T) {
@@ -62,7 +63,7 @@ func TestAddFavoritesUnauthorized(t *testing.T) {
 	assert.Nil(t, err)
 
 	assert.Equal(t, http.StatusUnauthorized, statusCode)
-	assert.Equal(t, "Authorization header is required", result.Message)
+	assert.Equal(t, domainerr.ErrAuthorizationHeaderRequired.Error(), result.Message)
 }
 
 func TestGetFavorites(t *testing.T) {
@@ -90,7 +91,7 @@ func TestGetFavoritesUnauthorized(t *testing.T) {
 	assert.Nil(t, err)
 
 	assert.Equal(t, http.StatusUnauthorized, statusCode)
-	assert.Equal(t, "Authorization header is required", result.Message)
+	assert.Equal(t, domainerr.ErrAuthorizationHeaderRequired.Error(), result.Message)
 }
 
 func TestRemoveFavorite(t *testing.T) {
@@ -121,7 +122,7 @@ func TestRemoveFavoriteUnauthorized(t *testing.T) {
 	assert.Nil(t, err)
 
 	assert.Equal(t, http.StatusUnauthorized, statusCode)
-	assert.Equal(t, "Authorization header is required", result.Message)
+	assert.Equal(t, domainerr.ErrAuthorizationHeaderRequired.Error(), result.Message)
 }
 
 func TestRemoveFavoriteBadRequest(t *testing.T) {
@@ -132,11 +133,11 @@ func TestRemoveFavoriteBadRequest(t *testing.T) {
 
 	url := "/api/v1/auth/favorites/A321"
 
-	result, statusCode, err := PerformRequest[*response.RemoveFavoriteResponse](nil, url, http.MethodDelete, httpHeader)
+	result, statusCode, err := PerformRequest[*response.FailedResponse](nil, url, http.MethodDelete, httpHeader)
 	assert.Nil(t, err)
 
 	assert.Equal(t, http.StatusBadRequest, statusCode)
-	assert.Equal(t, "Underwriter code is required", result.Message)
+	assert.Equal(t, domainerr.ErrFavoritesUnderwriterInvalid.Error(), result.Message)
 }
 
 func TestRemoveFavoriteNotFound(t *testing.T) {
@@ -148,11 +149,11 @@ func TestRemoveFavoriteNotFound(t *testing.T) {
 	underwriterId := "KI"
 	url := "/api/v1/auth/favorites/" + underwriterId
 
-	result, statusCode, err := PerformRequest[*response.RemoveFavoriteResponse](nil, url, http.MethodDelete, httpHeader)
+	result, statusCode, err := PerformRequest[*response.FailedResponse](nil, url, http.MethodDelete, httpHeader)
 	assert.Nil(t, err)
 
 	assert.Equal(t, http.StatusNotFound, statusCode)
-	assert.Equal(t, "favorites not found", result.Message)
+	assert.Equal(t, domainerr.ErrFavoritesNotFound.Error(), result.Message)
 }
 
 func TestGetFavoritesNotFound(t *testing.T) {
@@ -166,5 +167,5 @@ func TestGetFavoritesNotFound(t *testing.T) {
 	assert.Nil(t, err)
 
 	assert.Equal(t, http.StatusNotFound, statusCode)
-	assert.Equal(t, "favorites not found", result.Message)
+	assert.Equal(t, domainerr.ErrFavoritesNotFound.Error(), result.Message)
 }
