@@ -2,7 +2,7 @@ package router
 
 import (
 	"database/sql"
-	"stock_backend/internal/middleware"
+	"stock_backend/internal/delivery/middleware"
 	"time"
 
 	"github.com/goccy/go-json"

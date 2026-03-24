@@ -3,8 +3,8 @@ package router
 import (
 	"database/sql"
 	"os"
-	"stock_backend/internal/handler"
-	"stock_backend/internal/middleware"
+	"stock_backend/internal/delivery/handler"
+	"stock_backend/internal/delivery/middleware"
 	"stock_backend/internal/repository"
 	"stock_backend/internal/service"
 

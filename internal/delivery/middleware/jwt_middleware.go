@@ -1,7 +1,8 @@
 package middleware
 
 import (
-	"stock_backend/internal/handler"
+	"stock_backend/internal/delivery/handler"
+	"stock_backend/internal/helper"
 	"stock_backend/internal/model/domainerr"
 	"strings"
 	"time"
@@ -25,16 +26,8 @@ func JWTMiddleware(secretKey string) fiber.Handler {
 		}
 		tokenStr := parts[1]
 
-		// Parse and validate the JWT token
-		token, err := jwt.Parse(tokenStr, func(t *jwt.Token) (interface{}, error) {
-			// Check if the signing method is HMAC
-			if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
-				return nil, handler.ResponseErrorJSON(c, fiber.StatusUnauthorized, domainerr.ErrUnauthorized.Error())
-			}
-			return []byte(secretKey), nil
-		})
-
-		if err != nil || !token.Valid {
+		token, err := helper.ValidateJWT(tokenStr, secretKey)
+		if err != nil {
 			return handler.ResponseErrorJSON(c, fiber.StatusUnauthorized, domainerr.ErrUnauthorized.Error())
 		}
 

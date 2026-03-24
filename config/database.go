@@ -1,4 +1,4 @@
-package database
+package config
 
 import (
 	"fmt"
@@ -30,9 +30,9 @@ func DatabaseConfig() *sql.DB {
 		log.Fatalf("failed to connect to DB: %v", err)
 	}
 
-	db.SetMaxIdleConns(14)
-	db.SetMaxOpenConns(30)
-	db.SetConnMaxIdleTime(2 * time.Minute)
+	db.SetMaxIdleConns(28)
+	db.SetMaxOpenConns(60)
+	db.SetConnMaxIdleTime(3 * time.Minute)
 	db.SetConnMaxLifetime(10 * time.Minute)
 	return db
 }

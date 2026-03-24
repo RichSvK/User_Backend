@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"os"
 	"stock_backend/config"
-	"stock_backend/database"
 	"stock_backend/router"
 	"testing"
 
@@ -23,8 +22,8 @@ var adminToken string
 func init() {
 	config.LoadEnv("../test.env")
 
-	db = database.DatabaseConfig()
-	redisDb := database.ConnectRedis()
+	db = config.DatabaseConfig()
+	redisDb := config.ConnectRedis()
 	app = router.SetupRouter(db, redisDb)
 }
 

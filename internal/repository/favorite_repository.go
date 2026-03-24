@@ -70,7 +70,6 @@ func (repository *FavoriteRepositoryImpl) GetFavorites(userId string, ctx contex
 
 	// If the data is not in cache
 	rows, err := repository.DB.QueryContext(ctx, `SELECT underwriterId FROM favorites WHERE userId = $1`, userId)
-
 	if err != nil {
 		return nil, err
 	}

@@ -4,7 +4,6 @@ import (
 	"log"
 	"os"
 	"stock_backend/config"
-	"stock_backend/database"
 	"stock_backend/router"
 )
 
@@ -13,14 +12,14 @@ func main() {
 	config.LoadEnv(".env")
 
 	// Connect to database
-	db := database.DatabaseConfig()
+	db := config.DatabaseConfig()
 	defer func() {
 		if err := db.Close(); err != nil {
 			log.Printf("Failed to close DB: %v\n", err)
 		}
 	}()
 
-	redisDb := database.ConnectRedis()
+	redisDb := config.ConnectRedis()
 	defer func() {
 		if err := redisDb.Close(); err != nil {
 			log.Printf("Failed to close Redis client DB: %v\n", err)
