@@ -14,7 +14,7 @@ import (
 )
 
 type UserHandler interface {
-	Login(ctx *fiber.Ctx) error
+	Login(c *fiber.Ctx) error
 	Register(c *fiber.Ctx) error
 	VerifyUser(c *fiber.Ctx) error
 	Logout(c *fiber.Ctx) error

@@ -6,17 +6,18 @@ require (
 	github.com/go-playground/validator/v10 v10.26.0
 	github.com/gofiber/fiber/v2 v2.52.8
 	github.com/lib/pq v1.10.9
-	golang.org/x/crypto v0.39.0
+	golang.org/x/crypto v0.47.0
 )
 
 require (
 	github.com/golang-jwt/jwt v3.2.2+incompatible // direct
-	github.com/stretchr/testify v1.10.0
+	github.com/stretchr/testify v1.11.1
 )
 
 require (
 	github.com/goccy/go-json v0.10.5
-	github.com/redis/go-redis/v9 v9.11.0
+	github.com/gofiber/storage/redis/v3 v3.4.3
+	github.com/redis/go-redis/v9 v9.17.3
 )
 
 require (
@@ -37,7 +38,7 @@ require (
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect
 	github.com/google/uuid v1.6.0 // direct
-	github.com/klauspost/compress v1.17.9 // indirect
+	github.com/klauspost/compress v1.18.3 // indirect
 	github.com/leodido/go-urn v1.4.0 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
@@ -46,7 +47,7 @@ require (
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasthttp v1.51.0 // indirect
 	github.com/valyala/tcplisten v1.0.0 // indirect
-	golang.org/x/net v0.41.0 // indirect
-	golang.org/x/sys v0.33.0 // indirect
-	golang.org/x/text v0.26.0 // indirect
+	golang.org/x/net v0.48.0 // indirect
+	golang.org/x/sys v0.40.0 // indirect
+	golang.org/x/text v0.33.0 // indirect
 )

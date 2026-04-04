@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"os"
 	"stock_backend/config"
-	"stock_backend/router"
+	"stock_backend/internal/delivery/router"
 	"testing"
 
 	"github.com/gofiber/fiber/v2"

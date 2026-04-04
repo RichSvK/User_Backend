@@ -31,7 +31,7 @@ func SetupRouter(db *sql.DB, redisDB *redis.Client) *fiber.App {
 	// Middleware setup
 	app.Use(logger.New())
 	middleware.CorsMiddleware(app)
-	// middleware.RateLimitMiddleware(app)
+	middleware.RateLimitMiddleware(app)
 
 	// Register Route
 	RegisterUserRoutes(app, db, redisDB)

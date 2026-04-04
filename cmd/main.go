@@ -4,7 +4,7 @@ import (
 	"log"
 	"os"
 	"stock_backend/config"
-	"stock_backend/router"
+	"stock_backend/internal/delivery/router"
 )
 
 func main() {
