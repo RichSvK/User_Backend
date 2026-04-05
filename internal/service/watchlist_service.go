@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"stock_backend/internal/client"
 	"stock_backend/internal/model/domainerr"
 	"stock_backend/internal/model/response"
 	"stock_backend/internal/repository"
@@ -16,15 +17,21 @@ type WatchlistService interface {
 
 type WatchlistServiceImpl struct {
 	Repository repository.WatchlistRepository
+	stockClient client.StockClient
 }
 
-func NewWatchlistService(repository repository.WatchlistRepository) WatchlistService {
+func NewWatchlistService(repository repository.WatchlistRepository, stockClient client.StockClient) WatchlistService {
 	return &WatchlistServiceImpl{
 		Repository: repository,
+		stockClient: stockClient,
 	}
 }
 
 func (service *WatchlistServiceImpl) AddToWatchlist(ctx context.Context, userId string, stock string) (*response.AddWatchlistResponse, error) {
+	if err := service.stockClient.GetStock(ctx, stock); err != nil {
+		return nil, err
+	}
+
 	err := service.Repository.AddWatchlist(ctx, userId, stock)
 	if err != nil {
 		return nil, err

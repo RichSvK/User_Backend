@@ -16,6 +16,11 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+const (
+	registerPath = "/api/v1/auth/register"
+	loginPath    = "/api/v1/auth/login"
+)
+
 func ClearTable(tableName string) {
 	res, err := db.Exec(fmt.Sprintf("DELETE FROM %s", tableName))
 	if err != nil {
@@ -46,7 +51,8 @@ func CreateTestUser(email string, password string) error {
 		"Accept":       "application/json",
 	}
 
-	_, _, err := PerformRequest[*response.RegisterResponse](req, "/api/v1/users/register", http.MethodPost, headers)
+	url := registerPath
+	_, _, err := PerformRequest[*response.RegisterResponse](req, url, http.MethodPost, headers)
 	return err
 }
 
@@ -56,7 +62,7 @@ func CreateAdmin(email string, password string, username string) error {
 		return errors.New("failed to hash password")
 	}
 
-	_, err = db.Exec("INSERT INTO users (id, email, password, verified, username, roleId) VALUES ($1, $2, $3, $4, $5, $6)", 
+	_, err = db.Exec("INSERT INTO users (id, email, password, verified, username, roleId) VALUES ($1, $2, $3, $4, $5, $6)",
 		uuid.New(),
 		email, string(hashPw), true, username, 2)
 	if err != nil {
@@ -76,7 +82,7 @@ func GetUserToken(email string, password string) (string, error) {
 		"Accept":       "application/json",
 	}
 
-	url := "/api/v1/users/login"
+	url := loginPath
 	result, _, err := PerformRequest[*response.LoginResponse](requestBody, url, http.MethodPost, httpHeader)
 	if err != nil {
 		return "", err

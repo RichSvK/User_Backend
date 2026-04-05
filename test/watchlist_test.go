@@ -1,6 +1,7 @@
 package test
 
 import (
+	"fmt"
 	"net/http"
 	"stock_backend/internal/model/domainerr"
 	"stock_backend/internal/model/request"
@@ -8,6 +9,12 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+const (
+	watchlistPath    = "/api/v1/watchlists"
+	addWatchlistPath = "/api/v1/watchlists/stocks"
 )
 
 func TestAddWatchlist(t *testing.T) {
@@ -20,10 +27,10 @@ func TestAddWatchlist(t *testing.T) {
 		"Content-Type":  "application/json",
 		"Accept":        "application/json",
 	}
-	url := "/api/v1/auth/watchlist"
 
+	url := addWatchlistPath
 	result, statusCode, err := PerformRequest[*response.AddWatchlistResponse](requestBody, url, http.MethodPost, httpHeader)
-	assert.Nil(t, err)
+	require.Nil(t, err)
 
 	assert.Equal(t, http.StatusCreated, statusCode)
 	assert.Equal(t, "Successfully added NOBU to watchlist", result.Message)
@@ -38,10 +45,10 @@ func TestAddWatchListUnauthorized(t *testing.T) {
 		"Content-Type": "application/json",
 		"Accept":       "application/json",
 	}
-	url := "/api/v1/auth/watchlist"
 
+	url := addWatchlistPath
 	result, statusCode, err := PerformRequest[*response.FailedResponse](requestBody, url, http.MethodPost, httpHeader)
-	assert.Nil(t, err)
+	require.Nil(t, err)
 
 	assert.Equal(t, http.StatusUnauthorized, statusCode)
 	assert.Equal(t, domainerr.ErrAuthorizationHeaderRequired.Error(), result.Message)
@@ -57,10 +64,10 @@ func TestAddWatchlistDuplicate(t *testing.T) {
 		"Content-Type":  "application/json",
 		"Accept":        "application/json",
 	}
-	url := "/api/v1/auth/watchlist"
 
+	url := addWatchlistPath
 	result, statusCode, err := PerformRequest[*response.FailedResponse](requestBody, url, http.MethodPost, httpHeader)
-	assert.Nil(t, err)
+	require.Nil(t, err)
 
 	assert.Equal(t, http.StatusConflict, statusCode)
 	assert.Equal(t, domainerr.ErrWatchlistDuplicate.Error(), result.Message)
@@ -71,10 +78,10 @@ func TestAddWatchlistBadRequest(t *testing.T) {
 		"Authorization": "Bearer " + token,
 		"Accept":        "application/json",
 	}
-	url := "/api/v1/auth/watchlist"
 
+	url := addWatchlistPath
 	result, statusCode, err := PerformRequest[*response.FailedResponse](nil, url, http.MethodPost, httpHeader)
-	assert.Nil(t, err)
+	require.Nil(t, err)
 
 	assert.Equal(t, http.StatusBadRequest, statusCode)
 	assert.Equal(t, domainerr.ErrInvalidRequestBody.Error(), result.Message)
@@ -86,9 +93,9 @@ func TestGetWatchlist(t *testing.T) {
 		"Accept":        "application/json",
 	}
 
-	url := "/api/v1/auth/watchlist"
+	url := watchlistPath
 	result, statusCode, err := PerformRequest[*response.GetWatchlistResponse](nil, url, http.MethodGet, httpHeader)
-	assert.Nil(t, err)
+	require.Nil(t, err)
 
 	assert.Equal(t, http.StatusOK, statusCode)
 	assert.Equal(t, "Watchlist retrieved successfully", result.Message)
@@ -100,9 +107,9 @@ func TestGetWatchlistUnauthorized(t *testing.T) {
 		"Accept": "application/json",
 	}
 
-	url := "/api/v1/auth/watchlist"
+	url := watchlistPath
 	result, statusCode, err := PerformRequest[*response.FailedResponse](nil, url, http.MethodGet, httpHeader)
-	assert.Nil(t, err)
+	require.Nil(t, err)
 
 	assert.Equal(t, http.StatusUnauthorized, statusCode)
 	assert.Equal(t, domainerr.ErrAuthorizationHeaderRequired.Error(), result.Message)
@@ -115,9 +122,9 @@ func TestRemoveFromWatchlist(t *testing.T) {
 	}
 
 	stock := "NOBU"
-	url := "/api/v1/auth/watchlist/" + stock
+	url := fmt.Sprintf("%s/stocks/%s", watchlistPath, stock)
 	result, statusCode, err := PerformRequest[*response.RemoveWatchlistResponse](nil, url, http.MethodDelete, httpHeader)
-	assert.Nil(t, err)
+	require.Nil(t, err)
 
 	assert.Equal(t, http.StatusOK, statusCode)
 	assert.Equal(t, "Successfully removed NOBU from watchlist", result.Message)
@@ -129,9 +136,9 @@ func TestRemoveFromWatchlistUnauthorized(t *testing.T) {
 	}
 
 	stock := "NOBU"
-	url := "/api/v1/auth/watchlist/" + stock
+	url := fmt.Sprintf("%s/stocks/%s", watchlistPath, stock)
 	result, statusCode, err := PerformRequest[*response.FailedResponse](nil, url, http.MethodDelete, httpHeader)
-	assert.Nil(t, err)
+	require.Nil(t, err)
 
 	assert.Equal(t, http.StatusUnauthorized, statusCode)
 	assert.Equal(t, domainerr.ErrAuthorizationHeaderRequired.Error(), result.Message)
@@ -144,9 +151,9 @@ func TestRemoveFromWatchlistNotFound(t *testing.T) {
 	}
 
 	stock := "NOBU"
-	url := "/api/v1/auth/watchlist/" + stock
+	url := fmt.Sprintf("%s/stocks/%s", watchlistPath, stock)
 	result, statusCode, err := PerformRequest[*response.FailedResponse](nil, url, http.MethodDelete, httpHeader)
-	assert.Nil(t, err)
+	require.Nil(t, err)
 
 	assert.Equal(t, http.StatusNotFound, statusCode)
 	assert.Equal(t, domainerr.ErrWatchlistNotFound.Error(), result.Message)
@@ -158,9 +165,9 @@ func TestGetWatchlistNotFound(t *testing.T) {
 		"Accept":        "application/json",
 	}
 
-	url := "/api/v1/auth/watchlist"
+	url := watchlistPath
 	result, statusCode, err := PerformRequest[*response.FailedResponse](nil, url, http.MethodGet, httpHeader)
-	assert.Nil(t, err)
+	require.Nil(t, err)
 
 	assert.Equal(t, http.StatusNotFound, statusCode)
 	assert.Equal(t, domainerr.ErrWatchlistNotFound.Error(), result.Message)

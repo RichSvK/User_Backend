@@ -5,6 +5,7 @@ import (
 	"stock_backend/internal/delivery/middleware"
 	"time"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/goccy/go-json"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/logger"
@@ -33,10 +34,11 @@ func SetupRouter(db *sql.DB, redisDB *redis.Client) *fiber.App {
 	middleware.CorsMiddleware(app)
 	middleware.RateLimitMiddleware(app)
 
-	// Register Route
-	RegisterUserRoutes(app, db, redisDB)
-	RegisterWatchlistRoutes(app, db)
-	RegisterFavoriteRoutes(app, db, redisDB)
+	validator := validator.New()
 
+	// Register Route
+	RegisterUserRoutes(app, db, validator, redisDB)
+	RegisterWatchlistRoutes(app, db, validator)
+	RegisterFavoriteRoutes(app, db, validator, redisDB)
 	return app
 }

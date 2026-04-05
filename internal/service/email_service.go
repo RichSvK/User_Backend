@@ -31,7 +31,7 @@ func LoadSMTPConfig() (smtpConfig, error) {
 		AppHost: os.Getenv("APP_HOST"),
 		AppPort: os.Getenv("APP_PORT"),
 		Secret:  os.Getenv("EMAIL_SECRET_KEY"),
-		IsSend: false,
+		IsSend:  false,
 	}
 
 	if cfg.User == "" || cfg.Pass == "" || cfg.Host == "" ||

@@ -10,9 +10,9 @@ import (
 )
 
 type FavoriteService interface {
-	CreateFavorite(userId string, underwriterId string, ctx context.Context) (*response.AddFavoriteResponse, error)
-	GetFavorites(userId string, ctx context.Context) (*response.GetFavoritesResponse, error)
-	RemoveFavorite(userId string, underwriterCode string, ctx context.Context) (*response.RemoveFavoriteResponse, error)
+	CreateFavorite(ctx context.Context, userId string, underwriterId string) (*response.AddFavoriteResponse, error)
+	GetFavorites(ctx context.Context, userId string) (*response.GetFavoritesResponse, error)
+	RemoveFavorite(ctx context.Context, userId string, underwriterCode string) (*response.RemoveFavoriteResponse, error)
 }
 
 type FavoriteServiceImpl struct {
@@ -25,7 +25,7 @@ func NewFavoriteService(repository repository.FavoriteRepository) FavoriteServic
 	}
 }
 
-func (service *FavoriteServiceImpl) CreateFavorite(userId string, underwriterId string, ctx context.Context) (*response.AddFavoriteResponse, error) {
+func (service *FavoriteServiceImpl) CreateFavorite(ctx context.Context, userId string, underwriterId string) (*response.AddFavoriteResponse, error) {
 	favorite := &entity.Favorite{
 		UserID:        userId,
 		UnderwriterID: underwriterId,
@@ -42,7 +42,7 @@ func (service *FavoriteServiceImpl) CreateFavorite(userId string, underwriterId 
 	return response, nil
 }
 
-func (service *FavoriteServiceImpl) GetFavorites(userId string, ctx context.Context) (*response.GetFavoritesResponse, error) {
+func (service *FavoriteServiceImpl) GetFavorites(ctx context.Context, userId string) (*response.GetFavoritesResponse, error) {
 	favoriteData, err := service.Repository.GetFavorites(userId, ctx)
 	if err != nil {
 		return nil, err
@@ -59,7 +59,7 @@ func (service *FavoriteServiceImpl) GetFavorites(userId string, ctx context.Cont
 	return response, nil
 }
 
-func (service *FavoriteServiceImpl) RemoveFavorite(userId string, underwriterCode string, ctx context.Context) (*response.RemoveFavoriteResponse, error) {
+func (service *FavoriteServiceImpl) RemoveFavorite(ctx context.Context, userId string, underwriterCode string) (*response.RemoveFavoriteResponse, error) {
 	if err := service.Repository.RemoveFavorite(userId, underwriterCode, ctx); err != nil {
 		return nil, err
 	}

@@ -18,6 +18,7 @@ require (
 	github.com/goccy/go-json v0.10.5
 	github.com/gofiber/storage/redis/v3 v3.4.3
 	github.com/redis/go-redis/v9 v9.17.3
+	github.com/sony/gobreaker v1.0.0
 )
 
 require (

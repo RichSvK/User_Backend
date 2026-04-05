@@ -51,7 +51,7 @@ func (repository *FavoriteRepositoryImpl) Create(favorite *entity.Favorite, ctx 
 	// Invalidate the user's favorites cache so the next read gets fresh data
 	cacheKey := fmt.Sprintf("favorites:%s", favorite.UserID)
 	if err := repository.RedisDB.Del(ctx, cacheKey).Err(); err != nil {
-		log.Println("Failed to invalidate cache:", err.Error())
+		log.Printf("[ERROR] error: %v", err)
 	}
 	return nil
 }

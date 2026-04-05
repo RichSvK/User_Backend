@@ -5,7 +5,7 @@ User backend is a backend systems for user and stock watchlist service.
 
 ## Related Repositories
 - **iOS Application**: https://github.com/RichSvK/StockBalance
-- **API Gateway**: https://github.com/RichSvK/API_Gateway
+- **Gateway**: https://github.com/RichSvK/API_Gateway
 - **User and Watchlist services**: https://github.com/RichSvK/User_Backend
 - **Stock Services**: https://github.com/RichSvK/Stock_Backend
 
@@ -17,17 +17,22 @@ Software used in developing this program:
 - Redis
 
 ## API Endpoints
-### Watchlist Management
-- `GET /api/v1/auth/watchlist` - Retrieve user's stock watchlist
-- `POST /api/v1/auth/watchlist` - Add stock to watchlist
-- `DELETE /api/v1/auth/watchlist/:stock` - Remove stock from watchlist
-
 ### Authentication
 - `POST /api/v1/users/register` - Create new user account
 - `POST /api/v1/users/login` - User login
-- `POST /api/v1/auth/user/logout` - User logout
+- `POST /api/v1/users/logout` - User logout
 
 ### User Account
 - `GET /api/v1/auth/users/profile` - Get user profile
-- `DELETE /api/v1/auth/users` - Delete user account by admin
-- `GET /api/v1/users/verify` - Verify user account
+- `GET /api/v1/auth/verify` - Verify user account
+- `DELETE /api/v1/users` - Delete user account by admin
+
+### Watchlist Management
+- `GET /api/v1/watchlists` - Retrieve user's stock watchlist
+- `POST /api/v1/watchlists/stocks` - Add stock to user watchlist
+- `DELETE /api/v1/watchlists/stocks/:stock` - Remove stock from user watchlist
+
+### Favorites
+- `GET /api/v1/favorites` - Retrieve user underwriter favorites
+- `POST /api/v1/favorites` - Add underwriter to user favorites
+- `DELETE /api/v1/favorites/:underwriter` - Remove an underwriter from user favorites

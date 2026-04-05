@@ -1,6 +1,7 @@
 package test
 
 import (
+	"fmt"
 	"net/http"
 	"stock_backend/internal/model/domainerr"
 	"stock_backend/internal/model/request"
@@ -8,6 +9,10 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+)
+
+const (
+	favoritesPath = "/api/v1/favorites"
 )
 
 func TestAddFavorites(t *testing.T) {
@@ -21,7 +26,7 @@ func TestAddFavorites(t *testing.T) {
 		UnderwriterId: "KI",
 	}
 
-	url := "/api/v1/auth/favorites"
+	url := favoritesPath
 	result, statusCode, err := PerformRequest[*response.AddFavoriteResponse](requestBody, url, http.MethodPost, httpHeader)
 	assert.Nil(t, err)
 
@@ -40,7 +45,7 @@ func TestAddFavoritesDuplicates(t *testing.T) {
 		UnderwriterId: "KI",
 	}
 
-	url := "/api/v1/auth/favorites"
+	url := favoritesPath
 	result, statusCode, err := PerformRequest[*response.FailedResponse](requestBody, url, http.MethodPost, httpHeader)
 	assert.Nil(t, err)
 
@@ -58,7 +63,7 @@ func TestAddFavoritesUnauthorized(t *testing.T) {
 		UnderwriterId: "KI",
 	}
 
-	url := "/api/v1/auth/favorites"
+	url := favoritesPath
 	result, statusCode, err := PerformRequest[*response.AddFavoriteResponse](requestBody, url, http.MethodPost, httpHeader)
 	assert.Nil(t, err)
 
@@ -72,7 +77,7 @@ func TestGetFavorites(t *testing.T) {
 		"Accept":        "application/json",
 	}
 
-	url := "/api/v1/auth/favorites"
+	url := favoritesPath
 	result, statusCode, err := PerformRequest[*response.GetFavoritesResponse](nil, url, http.MethodGet, httpHeader)
 	assert.Nil(t, err)
 
@@ -86,7 +91,7 @@ func TestGetFavoritesUnauthorized(t *testing.T) {
 		"Accept": "application/json",
 	}
 
-	url := "/api/v1/auth/favorites"
+	url := favoritesPath
 	result, statusCode, err := PerformRequest[*response.GetFavoritesResponse](nil, url, http.MethodGet, httpHeader)
 	assert.Nil(t, err)
 
@@ -101,8 +106,7 @@ func TestRemoveFavorite(t *testing.T) {
 	}
 
 	underwriterId := "KI"
-	url := "/api/v1/auth/favorites/" + underwriterId
-
+	url := fmt.Sprintf("%s/%s", favoritesPath, underwriterId)
 	result, statusCode, err := PerformRequest[*response.RemoveFavoriteResponse](nil, url, http.MethodDelete, httpHeader)
 	assert.Nil(t, err)
 
@@ -116,8 +120,7 @@ func TestRemoveFavoriteUnauthorized(t *testing.T) {
 	}
 
 	underwriterId := "KI"
-	url := "/api/v1/auth/favorites/" + underwriterId
-
+	url := fmt.Sprintf("%s/%s", favoritesPath, underwriterId)
 	result, statusCode, err := PerformRequest[*response.RemoveFavoriteResponse](nil, url, http.MethodDelete, httpHeader)
 	assert.Nil(t, err)
 
@@ -131,8 +134,7 @@ func TestRemoveFavoriteBadRequest(t *testing.T) {
 		"Accept":        "application/json",
 	}
 
-	url := "/api/v1/auth/favorites/A321"
-
+	url := fmt.Sprintf("%s/A321", favoritesPath)
 	result, statusCode, err := PerformRequest[*response.FailedResponse](nil, url, http.MethodDelete, httpHeader)
 	assert.Nil(t, err)
 
@@ -147,8 +149,7 @@ func TestRemoveFavoriteNotFound(t *testing.T) {
 	}
 
 	underwriterId := "KI"
-	url := "/api/v1/auth/favorites/" + underwriterId
-
+	url := fmt.Sprintf("%s/%s", favoritesPath, underwriterId)
 	result, statusCode, err := PerformRequest[*response.FailedResponse](nil, url, http.MethodDelete, httpHeader)
 	assert.Nil(t, err)
 
@@ -162,7 +163,7 @@ func TestGetFavoritesNotFound(t *testing.T) {
 		"Accept":        "application/json",
 	}
 
-	url := "/api/v1/auth/favorites"
+	url := favoritesPath
 	result, statusCode, err := PerformRequest[*response.GetFavoritesResponse](nil, url, http.MethodGet, httpHeader)
 	assert.Nil(t, err)
 

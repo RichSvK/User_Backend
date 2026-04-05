@@ -20,7 +20,7 @@ func ConnectRedis() *redis.Client {
 	redisClient := redis.NewClient(&redis.Options{
 		Addr:     redisHost + ":" + redisPort,
 		Password: redisPass,
-		DB:       0, // use default DB
+		DB:       0,
 	})
 
 	// Test Connection

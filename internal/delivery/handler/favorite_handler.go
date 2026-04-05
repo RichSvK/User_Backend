@@ -32,7 +32,7 @@ func NewFavoriteHandler(service service.FavoriteService, validator *validator.Va
 }
 
 func (handler *FavoriteHandlerImpl) GetFavorites(c *fiber.Ctx) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	ctx, cancel := context.WithTimeout(c.Context(), 2*time.Second)
 	defer cancel()
 
 	userId, ok := helper.GetUserID(c)
@@ -40,16 +40,17 @@ func (handler *FavoriteHandlerImpl) GetFavorites(c *fiber.Ctx) error {
 		return ResponseErrorJSON(c, fiber.StatusBadRequest, domainerr.ErrFavoritesUserIdRequired.Error())
 	}
 
-	res, err := handler.Service.GetFavorites(userId, ctx)
+	res, err := handler.Service.GetFavorites(ctx, userId)
 	if err != nil {
-		return ResponseErrorJSON(c, MapFavoritesErrorToHTTPStatus(err), err.Error())
+		status, message := MapFavoritesErrorToHTTPStatus(err)
+		return ResponseErrorJSON(c, status, message)
 	}
 
 	return c.Status(fiber.StatusOK).JSON(res)
 }
 
 func (handler *FavoriteHandlerImpl) AddFavorites(c *fiber.Ctx) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	ctx, cancel := context.WithTimeout(c.Context(), 2*time.Second)
 	defer cancel()
 
 	userId, ok := helper.GetUserID(c)
@@ -66,16 +67,17 @@ func (handler *FavoriteHandlerImpl) AddFavorites(c *fiber.Ctx) error {
 		return ResponseErrorJSON(c, fiber.StatusBadRequest, helper.ValidationError(err))
 	}
 
-	res, err := handler.Service.CreateFavorite(userId, addFavoriteRequest.UnderwriterId, ctx)
+	res, err := handler.Service.CreateFavorite(ctx, userId, addFavoriteRequest.UnderwriterId)
 	if err != nil {
-		return ResponseErrorJSON(c, MapFavoritesErrorToHTTPStatus(err), err.Error())
+		status, message := MapFavoritesErrorToHTTPStatus(err)
+		return ResponseErrorJSON(c, status, message)
 	}
 
 	return c.Status(fiber.StatusCreated).JSON(res)
 }
 
 func (handler *FavoriteHandlerImpl) RemoveFavorites(c *fiber.Ctx) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	ctx, cancel := context.WithTimeout(c.Context(), 2*time.Second)
 	defer cancel()
 
 	userId, ok := helper.GetUserID(c)
@@ -88,9 +90,10 @@ func (handler *FavoriteHandlerImpl) RemoveFavorites(c *fiber.Ctx) error {
 		return ResponseErrorJSON(c, fiber.StatusBadRequest, domainerr.ErrFavoritesUnderwriterInvalid.Error())
 	}
 
-	res, err := handler.Service.RemoveFavorite(userId, underwriterCode, ctx)
+	res, err := handler.Service.RemoveFavorite(ctx, userId, underwriterCode)
 	if err != nil {
-		return ResponseErrorJSON(c, MapFavoritesErrorToHTTPStatus(err), err.Error())
+		status, message := MapFavoritesErrorToHTTPStatus(err)
+		return ResponseErrorJSON(c, status, message)
 	}
 
 	return c.Status(fiber.StatusOK).JSON(res)

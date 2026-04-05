@@ -8,21 +8,21 @@ import (
 )
 
 func main() {
-	// Load local environment variables => not in production
+	// Load local environment variables
 	config.LoadEnv(".env")
 
 	// Connect to database
 	db := config.DatabaseConfig()
 	defer func() {
 		if err := db.Close(); err != nil {
-			log.Printf("Failed to close DB: %v\n", err)
+			log.Printf("[ERROR] error: %v", err)
 		}
 	}()
 
 	redisDb := config.ConnectRedis()
 	defer func() {
 		if err := redisDb.Close(); err != nil {
-			log.Printf("Failed to close Redis client DB: %v\n", err)
+			log.Printf("[ERROR] error: %v", err)
 		}
 	}()
 

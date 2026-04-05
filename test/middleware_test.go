@@ -21,7 +21,7 @@ func TestUserRole(t *testing.T) {
 		UnderwriterId: "CC",
 	}
 
-	url := "/api/v1/auth/favorites"
+	url := favoritesPath
 	result, statusCode, err := PerformRequest[*response.AddFavoriteResponse](requestBody, url, http.MethodPost, httpHeader)
 	assert.Nil(t, err)
 
@@ -40,7 +40,7 @@ func TestUserRoleUnauthorized(t *testing.T) {
 		UnderwriterId: "CC",
 	}
 
-	url := "/api/v1/auth/favorites"
+	url := favoritesPath
 	result, statusCode, err := PerformRequest[*response.AddFavoriteResponse](requestBody, url, http.MethodPost, httpHeader)
 	assert.Nil(t, err)
 
@@ -54,7 +54,7 @@ func TestAdminUnauthorized(t *testing.T) {
 		"Accept":        "application/json",
 	}
 
-	url := "/api/v1/auth/users"
+	url := userPath
 	result, statusCode, err := PerformRequest[*response.FailedResponse](nil, url, http.MethodDelete, httpHeader)
 	assert.Nil(t, err)
 
@@ -68,7 +68,7 @@ func TestLoggedOutFailed(t *testing.T) {
 		"Accept":        "application/json",
 	}
 
-	url := "/api/v1/users/login"
+	url := loginPath
 	result, statusCode, err := PerformRequest[*response.FailedResponse](nil, url, http.MethodDelete, httpHeader)
 	assert.Nil(t, err)
 

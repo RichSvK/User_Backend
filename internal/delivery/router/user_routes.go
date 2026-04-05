@@ -14,25 +14,24 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-func RegisterUserRoutes(router fiber.Router, db *sql.DB, redis_db *redis.Client) {
-	validator := validator.New()
+func RegisterUserRoutes(router fiber.Router, db *sql.DB, validator *validator.Validate, redis_db *redis.Client) {
 	jwtSecret := os.Getenv("JWT_SECRET")
 	userRepository := repository.NewUserRepository(db, redis_db)
 
 	smtp, err := service.LoadSMTPConfig()
 	if err != nil {
-		log.Println("failed to load smtp")
+		log.Printf("[ERROR] error load SMTP: %v", err)
 	}
 	userService := service.NewUserService(userRepository, jwtSecret, smtp)
 	userHandler := handler.NewUserHandler(userService, validator)
 
-	userRouting := router.Group("/api/v1/users")
+	userRouting := router.Group("/api/v1/auth")
 	userRouting.Use(middleware.LoggedOutMiddleware())
 	userRouting.Post("/login", userHandler.Login)
 	userRouting.Post("/register", userHandler.Register)
 	userRouting.Get("/verify", userHandler.VerifyUser)
 
-	authRouting := router.Group("/api/v1/auth/users")
+	authRouting := router.Group("/api/v1/users")
 	authRouting.Use(middleware.JWTMiddleware(jwtSecret))
 	authRouting.Get("/profile", userHandler.GetUserInfo)
 	authRouting.Post("/logout", userHandler.Logout)

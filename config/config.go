@@ -1,9 +1,13 @@
 package config
 
 import (
+	"log"
+
 	"github.com/joho/godotenv"
 )
 
 func LoadEnv(filename string) {
-	_ = godotenv.Load(filename)
+	if err := godotenv.Load(filename); err != nil {
+		log.Printf("[ERROR] error: %v", err)
+	}
 }

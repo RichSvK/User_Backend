@@ -3,7 +3,6 @@ package repository
 import (
 	"context"
 	"database/sql"
-	"log"
 	"stock_backend/internal/model/domainerr"
 
 	"github.com/lib/pq"
@@ -65,7 +64,6 @@ func (repository *WatchlistRepositoryImpl) GetWatchlistByUserID(ctx context.Cont
 	rows, err := repository.DB.QueryContext(ctx, query, userId)
 
 	if err != nil {
-		log.Printf("query watchlist failed: %v\n", err)
 		return nil, domainerr.ErrInternal
 	}
 
@@ -77,14 +75,12 @@ func (repository *WatchlistRepositoryImpl) GetWatchlistByUserID(ctx context.Cont
 	for rows.Next() {
 		var stock string
 		if err := rows.Scan(&stock); err != nil {
-			log.Printf("scan watchlist row failed: %v", err)
 			return nil, domainerr.ErrInternal
 		}
 		watchlist = append(watchlist, stock)
 	}
 
 	if err := rows.Err(); err != nil {
-		log.Printf("row iteration failed: %v", err)
 		return nil, domainerr.ErrInternal
 	}
 

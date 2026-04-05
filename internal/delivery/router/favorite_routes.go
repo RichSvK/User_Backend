@@ -13,13 +13,12 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-func RegisterFavoriteRoutes(router fiber.Router, db *sql.DB, redis_db *redis.Client) {
-	favoriteRouting := router.Group("/api/v1/auth/favorites")
-	validator := validator.New()
+func RegisterFavoriteRoutes(router fiber.Router, db *sql.DB, validator *validator.Validate, redis_db *redis.Client) {
 	favoriteRepository := repository.NewFavoriteRepository(db, redis_db)
 	favoriteService := service.NewFavoriteService(favoriteRepository)
 	favoriteHandler := handler.NewFavoriteHandler(favoriteService, validator)
 
+	favoriteRouting := router.Group("/api/v1/favorites")
 	favoriteRouting.Use(middleware.JWTMiddleware(os.Getenv("JWT_SECRET")), middleware.UserMiddleware())
 	favoriteRouting.Get("", favoriteHandler.GetFavorites)
 	favoriteRouting.Post("", favoriteHandler.AddFavorites)

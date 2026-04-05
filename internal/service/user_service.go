@@ -17,12 +17,12 @@ import (
 )
 
 type UserService interface {
-	Login(request request.LoginRequest, ctx context.Context) (*response.LoginResponse, error)
-	Register(request request.RegisterRequest, ctx context.Context) (*response.RegisterResponse, error)
-	VerifyUser(tokenString string, ctx context.Context) (*response.VerifyResponse, error)
-	Logout(userId string, ctx context.Context) (*response.LogoutResponse, error)
-	DeleteUser(userId string, ctx context.Context) (*response.DeleteUserResponse, error)
-	GetProfile(userId string, ctx context.Context) (*response.UserProfileResponse, error)
+	Login(ctx context.Context, request request.LoginRequest) (*response.LoginResponse, error)
+	Register(ctx context.Context, request request.RegisterRequest) (*response.RegisterResponse, error)
+	VerifyUser(ctx context.Context, tokenString string) (*response.VerifyResponse, error)
+	Logout(ctx context.Context, userId string) (*response.LogoutResponse, error)
+	DeleteUser(ctx context.Context, userId string) (*response.DeleteUserResponse, error)
+	GetProfile(ctx context.Context, userId string) (*response.UserProfileResponse, error)
 }
 
 type UserServiceImpl struct {
@@ -39,7 +39,7 @@ func NewUserService(repository repository.UserRepository, jwtSecret string, smtp
 	}
 }
 
-func (service *UserServiceImpl) Login(request request.LoginRequest, ctx context.Context) (*response.LoginResponse, error) {
+func (service *UserServiceImpl) Login(ctx context.Context, request request.LoginRequest) (*response.LoginResponse, error) {
 	user, err := service.Repository.GetUser(request.Email, ctx)
 	if err != nil {
 		return nil, err
@@ -73,7 +73,7 @@ func (service *UserServiceImpl) Login(request request.LoginRequest, ctx context.
 	return response, nil
 }
 
-func (service *UserServiceImpl) Register(request request.RegisterRequest, ctx context.Context) (*response.RegisterResponse, error) {
+func (service *UserServiceImpl) Register(ctx context.Context, request request.RegisterRequest) (*response.RegisterResponse, error) {
 	hash, err := bcrypt.GenerateFromPassword(
 		[]byte(request.Password),
 		bcrypt.DefaultCost,
@@ -100,7 +100,7 @@ func (service *UserServiceImpl) Register(request request.RegisterRequest, ctx co
 		return nil, err
 	}
 
-	verifyURL := fmt.Sprintf("http://%s:%s/api/v1/users/verify?token=%s", service.Smtp.AppHost, service.Smtp.AppPort, token)
+	verifyURL := fmt.Sprintf("http://%s:%s/api/v1/auth/verify?token=%s", service.Smtp.AppHost, service.Smtp.AppPort, token)
 	htmlBody, err := renderVerificationEmail(verifyURL)
 	if err != nil {
 		return nil, err
@@ -108,7 +108,7 @@ func (service *UserServiceImpl) Register(request request.RegisterRequest, ctx co
 
 	// Run this code if email verification is required and SMTP server is configured
 	if err := service.Smtp.sendHTML(ctx, user.Email, "Verify your Stock App account", htmlBody); err != nil {
-		log.Println("email failed:", err)
+		log.Printf("[ERROR] error email: %v", err)
 	}
 
 	response := &response.RegisterResponse{
@@ -118,7 +118,7 @@ func (service *UserServiceImpl) Register(request request.RegisterRequest, ctx co
 	return response, nil
 }
 
-func (service *UserServiceImpl) VerifyUser(tokenString string, ctx context.Context) (*response.VerifyResponse, error) {
+func (service *UserServiceImpl) VerifyUser(ctx context.Context, tokenString string) (*response.VerifyResponse, error) {
 	token, err := helper.ValidateJWT(tokenString, service.Smtp.Secret)
 	if err != nil {
 		return nil, domainerr.ErrInvalidToken
@@ -145,7 +145,7 @@ func (service *UserServiceImpl) VerifyUser(tokenString string, ctx context.Conte
 	return response, nil
 }
 
-func (service *UserServiceImpl) Logout(userId string, ctx context.Context) (*response.LogoutResponse, error) {
+func (service *UserServiceImpl) Logout(ctx context.Context, userId string) (*response.LogoutResponse, error) {
 	if err := service.Repository.Logout(userId, ctx); err != nil {
 		return nil, err
 	}
@@ -157,7 +157,7 @@ func (service *UserServiceImpl) Logout(userId string, ctx context.Context) (*res
 	return response, nil
 }
 
-func (service *UserServiceImpl) DeleteUser(userId string, ctx context.Context) (*response.DeleteUserResponse, error) {
+func (service *UserServiceImpl) DeleteUser(ctx context.Context, userId string) (*response.DeleteUserResponse, error) {
 	if err := service.Repository.DeleteUser(userId, ctx); err != nil {
 		return nil, err
 	}
@@ -169,7 +169,7 @@ func (service *UserServiceImpl) DeleteUser(userId string, ctx context.Context) (
 	return response, nil
 }
 
-func (service *UserServiceImpl) GetProfile(userId string, ctx context.Context) (*response.UserProfileResponse, error) {
+func (service *UserServiceImpl) GetProfile(ctx context.Context, userId string) (*response.UserProfileResponse, error) {
 	user, err := service.Repository.GetUserByID(userId, ctx)
 
 	if err != nil {

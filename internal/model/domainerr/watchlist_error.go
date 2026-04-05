@@ -3,6 +3,7 @@ package domainerr
 import "errors"
 
 var (
-	ErrWatchlistNotFound  = errors.New("watchlist not found")
-	ErrWatchlistDuplicate = errors.New("duplicate stock in watchlist")
+	ErrWatchlistNotFound       = errors.New("watchlist not found")
+	ErrWatchlistDuplicate      = errors.New("duplicate stock in watchlist")
+	ErrStockServiceUnavailable = errors.New("stock service is unavailable")
 )

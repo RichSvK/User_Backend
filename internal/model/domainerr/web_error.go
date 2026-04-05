@@ -10,4 +10,5 @@ var (
 	ErrUnauthorized                = errors.New("unauthorized")
 	ErrTokenExpired                = errors.New("token has expired")
 	ErrUnauthorizedAccess          = errors.New("unauthorized access")
+	ErrServiceTimeout              = errors.New("request timeout")
 )

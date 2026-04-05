@@ -58,7 +58,7 @@ func (repository *UserRepositoryImpl) Create(user entity.User, ctx context.Conte
 
 	defer func() {
 		if err := tx.Rollback(); err != nil && err != sql.ErrTxDone {
-			log.Println("transaction rollback error:", err)
+			log.Printf("[ERROR] error rollback: %v", err)
 		}
 	}()
 
@@ -101,7 +101,6 @@ func (repository *UserRepositoryImpl) VerifyUser(userId string, ctx context.Cont
 		return domainerr.ErrInternal
 	}
 
-	fmt.Printf("Rows affected: %d\n", rows) // Add this
 	if rows == 0 {
 		return domainerr.ErrVerified
 	}

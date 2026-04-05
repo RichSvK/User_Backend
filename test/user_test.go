@@ -13,6 +13,13 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+const (
+	userPath    = "/api/v1/users"
+	logoutPath  = "/api/v1/users/logout"
+	profilePath = "/api/v1/users/profile"
+	verifyPath  = "/api/v1/auth/verify"
+)
+
 func TestRegister(t *testing.T) {
 	requestBody := request.RegisterRequest{
 		Email:    "test@gmail.com",
@@ -25,7 +32,7 @@ func TestRegister(t *testing.T) {
 		"Accept":       "application/json",
 	}
 
-	url := "/api/v1/users/register"
+	url := registerPath
 	result, statusCode, err := PerformRequest[*response.RegisterResponse](requestBody, url, http.MethodPost, httpHeader)
 	assert.Nil(t, err)
 
@@ -44,7 +51,7 @@ func TestRegisterBadRequest(t *testing.T) {
 		"Accept":       "application/json",
 	}
 
-	url := "/api/v1/users/register"
+	url := registerPath
 	result, statusCode, err := PerformRequest[*response.FailedResponse](requestBody, url, http.MethodPost, httpHeader)
 	assert.Nil(t, err)
 
@@ -64,7 +71,7 @@ func TestRegisterValidationFailed(t *testing.T) {
 		"Accept":       "application/json",
 	}
 
-	url := "/api/v1/users/register"
+	url := registerPath
 	result, statusCode, err := PerformRequest[*response.FailedResponse](requestBody, url, http.MethodPost, httpHeader)
 	assert.Nil(t, err)
 
@@ -84,7 +91,7 @@ func TestRegisterDuplicate(t *testing.T) {
 		"Accept":       "application/json",
 	}
 
-	url := "/api/v1/users/register"
+	url := registerPath
 	result, statusCode, err := PerformRequest[*response.FailedResponse](requestBody, url, http.MethodPost, httpHeader)
 	assert.Nil(t, err)
 
@@ -103,7 +110,7 @@ func TestLogin(t *testing.T) {
 		"Accept":       "application/json",
 	}
 
-	url := "/api/v1/users/login"
+	url := loginPath
 	result, statusCode, err := PerformRequest[*response.LoginResponse](requestBody, url, http.MethodPost, httpHeader)
 	assert.Nil(t, err)
 
@@ -123,7 +130,7 @@ func TestLoginWrongPassword(t *testing.T) {
 		"Accept":       "application/json",
 	}
 
-	url := "/api/v1/users/login"
+	url := loginPath
 	result, statusCode, err := PerformRequest[*response.FailedResponse](requestBody, url, http.MethodPost, httpHeader)
 	assert.Nil(t, err)
 
@@ -142,7 +149,7 @@ func TestLoginBadRequest(t *testing.T) {
 		"Accept":       "application/json",
 	}
 
-	url := "/api/v1/users/login"
+	url := loginPath
 	result, statusCode, err := PerformRequest[*response.FailedResponse](requestBody, url, http.MethodPost, httpHeader)
 	assert.Nil(t, err)
 
@@ -161,7 +168,7 @@ func TestLoginMinPassword(t *testing.T) {
 		"Accept":       "application/json",
 	}
 
-	url := "/api/v1/users/login"
+	url := loginPath
 	result, statusCode, err := PerformRequest[*response.FailedResponse](requestBody, url, http.MethodPost, httpHeader)
 	assert.Nil(t, err)
 
@@ -179,7 +186,7 @@ func TestLoginBadRequiredField(t *testing.T) {
 		"Accept":       "application/json",
 	}
 
-	url := "/api/v1/users/login"
+	url := loginPath
 	result, statusCode, err := PerformRequest[*response.FailedResponse](requestBody, url, http.MethodPost, httpHeader)
 	assert.Nil(t, err)
 
@@ -198,7 +205,7 @@ func TestLoginBadEmailField(t *testing.T) {
 		"Accept":       "application/json",
 	}
 
-	url := "/api/v1/users/login"
+	url := loginPath
 	result, statusCode, err := PerformRequest[*response.FailedResponse](requestBody, url, http.MethodPost, httpHeader)
 	assert.Nil(t, err)
 
@@ -217,7 +224,7 @@ func TestLoginNotFound(t *testing.T) {
 		"Accept":       "application/json",
 	}
 
-	url := "/api/v1/users/login"
+	url := loginPath
 	result, statusCode, err := PerformRequest[*response.FailedResponse](requestBody, url, http.MethodPost, httpHeader)
 	assert.Nil(t, err)
 
@@ -236,7 +243,7 @@ func TestLogoutSuccess(t *testing.T) {
 		"Accept":       "application/json",
 	}
 
-	url := "/api/v1/users/login"
+	url := loginPath
 	result, statusCode, err := PerformRequest[*response.LoginResponse](requestBody, url, http.MethodPost, httpHeader)
 	assert.Nil(t, err)
 
@@ -247,7 +254,7 @@ func TestLogoutSuccess(t *testing.T) {
 	delete(httpHeader, "Content-Type")
 	httpHeader["Authorization"] = fmt.Sprintf("Bearer %s", result.Token)
 
-	url = "/api/v1/auth/users/logout"
+	url = logoutPath
 	logoutResult, statusCode, err := PerformRequest[*response.LogoutResponse](nil, url, http.MethodPost, httpHeader)
 	assert.Nil(t, err)
 
@@ -260,7 +267,7 @@ func TestLogoutFailed(t *testing.T) {
 		"Accept": "application/json",
 	}
 
-	url := "/api/v1/auth/users/logout"
+	url := logoutPath
 	result, statusCode, err := PerformRequest[*response.LogoutResponse](nil, url, http.MethodPost, httpHeader)
 	assert.Nil(t, err)
 
@@ -279,7 +286,7 @@ func TestGetProfile(t *testing.T) {
 		"Content-Type": "application/json",
 	}
 
-	url := "/api/v1/users/login"
+	url := loginPath
 	result, statusCode, err := PerformRequest[*response.LoginResponse](requestBody, url, http.MethodPost, httpHeader)
 	assert.Nil(t, err)
 
@@ -290,7 +297,7 @@ func TestGetProfile(t *testing.T) {
 	delete(httpHeader, "Content-Type")
 	httpHeader["Authorization"] = fmt.Sprintf("Bearer %s", result.Token)
 
-	url = "/api/v1/auth/users/profile"
+	url = profilePath
 	profileResult, statusCode, err := PerformRequest[*response.UserProfileResponse](nil, url, http.MethodGet, httpHeader)
 	assert.Nil(t, err)
 
@@ -304,7 +311,7 @@ func TestGetProfileUnauthorized(t *testing.T) {
 		"Accept": "application/json",
 	}
 
-	url := "/api/v1/auth/users/profile"
+	url := profilePath
 	result, statusCode, err := PerformRequest[*response.FailedResponse](nil, url, http.MethodGet, httpHeader)
 	assert.Nil(t, err)
 
@@ -317,7 +324,7 @@ func TestVerifyUserTokenEmpty(t *testing.T) {
 		"Accept": "application/json",
 	}
 
-	url := "/api/v1/users/verify?token="
+	url := fmt.Sprintf("%s?token=", verifyPath)
 	result, statusCode, err := PerformRequest[*response.FailedResponse](nil, url, http.MethodGet, httpHeader)
 	assert.Nil(t, err)
 
@@ -330,7 +337,8 @@ func TestVerifyUserInvalidToken(t *testing.T) {
 		"Accept": "application/json",
 	}
 
-	url := "/api/v1/users/verify?token=123456789"
+	invalidToken := "123456789"
+	url := fmt.Sprintf("%s?token=%s", verifyPath, invalidToken)
 	result, statusCode, err := PerformRequest[*response.FailedResponse](nil, url, http.MethodGet, httpHeader)
 	assert.Nil(t, err)
 
@@ -357,7 +365,7 @@ func TestVerifyUser(t *testing.T) {
 	verifyToken, err := helper.GenerateJWT(userId, email, role, os.Getenv("EMAIL_SECRET_KEY"))
 	assert.Nil(t, err)
 
-	url := "/api/v1/users/verify?token=" + verifyToken
+	url := fmt.Sprintf("%s?token=%s", verifyPath, verifyToken)
 	result, statusCode, err := PerformRequest[*response.VerifyResponse](nil, url, http.MethodGet, httpHeader)
 	assert.Nil(t, err)
 
@@ -384,7 +392,7 @@ func TestVerifyUserVerified(t *testing.T) {
 	verifyToken, err := helper.GenerateJWT(userId, email, role, os.Getenv("EMAIL_SECRET_KEY"))
 	assert.Nil(t, err)
 
-	url := "/api/v1/users/verify?token=" + verifyToken
+	url := fmt.Sprintf("%s?token=%s", verifyPath, verifyToken)
 	result, statusCode, err := PerformRequest[*response.FailedResponse](nil, url, http.MethodGet, httpHeader)
 	assert.Nil(t, err)
 
@@ -411,7 +419,8 @@ func TestDeleteUser(t *testing.T) {
 		"Accept":        "application/json",
 		"Content-Type":  "application/json",
 	}
-	url := "/api/v1/auth/users"
+
+	url := userPath
 	result, statusCode, err := PerformRequest[*response.DeleteUserResponse](requestBody, url, http.MethodDelete, httpheader)
 	assert.Nil(t, err)
 

@@ -35,7 +35,7 @@ func NewUserHandler(service service.UserService, validator *validator.Validate) 
 }
 
 func (handler *UserHandlerImpl) Login(c *fiber.Ctx) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	ctx, cancel := context.WithTimeout(c.Context(), 3*time.Second)
 	defer cancel()
 
 	var loginRequest request.LoginRequest
@@ -47,16 +47,17 @@ func (handler *UserHandlerImpl) Login(c *fiber.Ctx) error {
 		return ResponseErrorJSON(c, fiber.StatusBadRequest, helper.ValidationError(err))
 	}
 
-	res, err := handler.UserService.Login(loginRequest, ctx)
+	res, err := handler.UserService.Login(ctx, loginRequest)
 	if err != nil {
-		return ResponseErrorJSON(c, MapErrorToHTTPStatus(err), err.Error())
+		status, message := MapErrorToHTTPStatus(err)
+		return ResponseErrorJSON(c, status, message)
 	}
 
 	return c.Status(fiber.StatusOK).JSON(res)
 }
 
 func (handler *UserHandlerImpl) Register(c *fiber.Ctx) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	ctx, cancel := context.WithTimeout(c.Context(), 3*time.Second)
 	defer cancel()
 
 	var registerRequest request.RegisterRequest
@@ -68,16 +69,17 @@ func (handler *UserHandlerImpl) Register(c *fiber.Ctx) error {
 		return ResponseErrorJSON(c, fiber.StatusBadRequest, helper.ValidationError(err))
 	}
 
-	res, err := handler.UserService.Register(registerRequest, ctx)
+	res, err := handler.UserService.Register(ctx, registerRequest)
 	if err != nil {
-		return ResponseErrorJSON(c, MapErrorToHTTPStatus(err), err.Error())
+		status, message := MapErrorToHTTPStatus(err)
+		return ResponseErrorJSON(c, status, message)
 	}
 
 	return c.Status(fiber.StatusCreated).JSON(res)
 }
 
 func (handler *UserHandlerImpl) VerifyUser(c *fiber.Ctx) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	ctx, cancel := context.WithTimeout(c.Context(), 2*time.Second)
 	defer cancel()
 
 	token := c.Query("token")
@@ -85,16 +87,17 @@ func (handler *UserHandlerImpl) VerifyUser(c *fiber.Ctx) error {
 		return ResponseErrorJSON(c, fiber.StatusBadRequest, domainerr.ErrEmptyToken.Error())
 	}
 
-	res, err := handler.UserService.VerifyUser(token, ctx)
+	res, err := handler.UserService.VerifyUser(ctx, token)
 	if err != nil {
-		return ResponseErrorJSON(c, MapErrorToHTTPStatus(err), err.Error())
+		status, message := MapErrorToHTTPStatus(err)
+		return ResponseErrorJSON(c, status, message)
 	}
 
 	return c.Status(fiber.StatusOK).JSON(res)
 }
 
 func (handler *UserHandlerImpl) Logout(c *fiber.Ctx) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	ctx, cancel := context.WithTimeout(c.Context(), 3*time.Second)
 	defer cancel()
 
 	userId, ok := helper.GetUserID(c)
@@ -102,16 +105,17 @@ func (handler *UserHandlerImpl) Logout(c *fiber.Ctx) error {
 		return ResponseErrorJSON(c, fiber.StatusBadRequest, domainerr.ErrFavoritesUserIdRequired.Error())
 	}
 
-	res, err := handler.UserService.Logout(userId, ctx)
+	res, err := handler.UserService.Logout(ctx, userId)
 	if err != nil {
-		return ResponseErrorJSON(c, MapErrorToHTTPStatus(err), err.Error())
+		status, message := MapErrorToHTTPStatus(err)
+		return ResponseErrorJSON(c, status, message)
 	}
 
 	return c.Status(fiber.StatusOK).JSON(res)
 }
 
 func (handler *UserHandlerImpl) DeleteUser(c *fiber.Ctx) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	ctx, cancel := context.WithTimeout(c.Context(), 3*time.Second)
 	defer cancel()
 
 	var deleteRequest request.DeleteUserRequest
@@ -123,16 +127,17 @@ func (handler *UserHandlerImpl) DeleteUser(c *fiber.Ctx) error {
 		return ResponseErrorJSON(c, fiber.StatusBadRequest, helper.ValidationError(err))
 	}
 
-	res, err := handler.UserService.DeleteUser(deleteRequest.UserId, ctx)
+	res, err := handler.UserService.DeleteUser(ctx, deleteRequest.UserId)
 	if err != nil {
-		return ResponseErrorJSON(c, MapErrorToHTTPStatus(err), err.Error())
+		status, message := MapErrorToHTTPStatus(err)
+		return ResponseErrorJSON(c, status, message)
 	}
 
 	return c.Status(fiber.StatusOK).JSON(res)
 }
 
 func (handler *UserHandlerImpl) GetUserInfo(c *fiber.Ctx) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	ctx, cancel := context.WithTimeout(c.Context(), 3*time.Second)
 	defer cancel()
 
 	userId, ok := helper.GetUserID(c)
@@ -140,9 +145,10 @@ func (handler *UserHandlerImpl) GetUserInfo(c *fiber.Ctx) error {
 		return ResponseErrorJSON(c, fiber.StatusBadRequest, domainerr.ErrFavoritesUserIdRequired.Error())
 	}
 
-	res, err := handler.UserService.GetProfile(userId, ctx)
+	res, err := handler.UserService.GetProfile(ctx, userId)
 	if err != nil {
-		return ResponseErrorJSON(c, MapErrorToHTTPStatus(err), err.Error())
+		status, message := MapErrorToHTTPStatus(err)
+		return ResponseErrorJSON(c, status, message)
 	}
 
 	return c.Status(fiber.StatusOK).JSON(res)
